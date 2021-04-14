@@ -25,7 +25,9 @@ telegramDb = Database()
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
-        text='Main menu',
+        text=emoji.cat + 'Main menu\n'
+             'This is the testing bot. \n'
+             'Please refer to @TrustStakingBot for the official release.',
         reply_markup=reply_buttons,
     )
     return MainMenu
@@ -37,7 +39,9 @@ def main_menu(update: Update, context: CallbackContext):
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
-        text='Main menu',
+        text=emoji.cat + 'Main menu\n'
+             'This is the testing bot. \n'
+             'Please refer to @TrustStakingBot for the official release.',
         reply_markup=reply_buttons,
     )
     return MainMenu
@@ -46,7 +50,7 @@ oldAvaiable = 0.0
 def telegram_bot_sendtext(job):
     subscription = job.job.context
     global oldAvaiable
-    bot_token = '1724076081:AAE0US-BoKRnSdfiF_V7j9zvzNSgPqAjdB4'
+    bot_token = '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4'
     subscribed_users = telegramDb.get_subscribed_users(subscription)
     TS = Agency()
     newAvailable = TS.maxDelegationCap - TS.totalActiveStake
@@ -56,16 +60,15 @@ def telegram_bot_sendtext(job):
         print("Available: ", newAvailable)
         for user in subscribed_users:
             if newAvailable >= user['availableSpace']:
-                bot_message = emoji.attention + " {:.4f}".format(newAvailable) + " eGLD available to be stake"
+                bot_message = emoji.attention + " {:.2f}".format(newAvailable) + " eGLD available to be staked."
                 send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                             + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
                 response = requests.get(send_text)
 
-
 def main():
 
     updater = Updater(
-        '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg')
+        '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4')
     dp = updater.dispatcher
     
     conv_handler = ConversationHandler(
