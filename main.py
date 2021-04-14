@@ -42,28 +42,32 @@ def main_menu(update: Update, context: CallbackContext):
     )
     return MainMenu
 
-
+oldAvaiable = 0.0
 def telegram_bot_sendtext(job):
     subscription = job.job.context
-    bot_token = '1724076081:AAE0US-BoKRnSdfiF_V7j9zvzNSgPqAjdB4'
+    global oldAvaiable
+    bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
     subscribed_users = telegramDb.get_subscribed_users(subscription)
     TS = Agency()
-    available = TS.maxDelegationCap - TS.totalActiveStake
-    print("available: ", available)
-
-    for user in subscribed_users:
-        if available >= user['availableSpace']:
-            bot_message = emoji.attention + " {:.4f}".format(available) + " eGLD available to be stake"
-            send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                        + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
-            response = requests.get(send_text)
+    newAvailable = TS.maxDelegationCap - TS.totalActiveStake
+    if newAvailable != oldAvaiable:
+        print("Old Available: ", oldAvaiable)
+        oldAvaiable = newAvailable
+        print("Available: ", newAvailable)
+        for user in subscribed_users:
+            if newAvailable >= user['availableSpace']:
+                bot_message = emoji.attention + " {:.4f}".format(newAvailable) + " eGLD available to be stake"
+                send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                            + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
+                response = requests.get(send_text)
 
 
 def main():
 
     updater = Updater(
-        '1724076081:AAE0US-BoKRnSdfiF_V7j9zvzNSgPqAjdB4')
+        '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg')
     dp = updater.dispatcher
+    
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -99,9 +103,7 @@ def main():
     updater.job_queue.run_repeating(telegram_bot_sendtext, 3, context="availableSpace")
     updater.start_polling()
 
-    # j.run_repeating(check_amount, interval=datetime.timedelta(seconds=15))
     updater.idle()
-
 
 if __name__ == "__main__":
     main()
