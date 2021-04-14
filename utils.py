@@ -13,9 +13,12 @@ mainnet_proxy = ElrondProxy('https://gateway.elrond.com')
 TrustStaking_contract = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl')
 default_agency = 'trust staking'
 db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority'
-bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
+bot_token = '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4'
 
-main_menu_message = emoji.cat + '''Main menu\n'''
+main_menu_message = emoji.cat + '''
+Main menu\n
+This is the testing bot. \n
+Please refer to @TrustStakingBot for the official release.'''
 
 agency_info = '''
 <code>Agency: </code><a href="{}">{}</a>
@@ -79,9 +82,9 @@ Change your default agency if you want to calculate the optimal redelegation per
 # <code>APR: </code>{}%
 
 choose_agency = '''
-Type @TrustStakingBot *agency_name* to set a new agency by default\n
+Type @TrustStakingAvailableSupplyBot *agency_name* to set a new agency by default\n
 ex: \n
-    @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n
+    @TrustStakingAvailableSupplyBot tr -> a list including all agencies that include "tr" in their name will appear.\n
     Select the one that you want from the list.
 '''
 
