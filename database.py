@@ -5,7 +5,7 @@ class Database:
     def __init__(self):
         self.client = pymongo.MongoClient(
             "mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority")
-        self.db = self.client.telegramBot
+        self.db = self.client.devTelegramBot
 
         self.users = self.db.users
         self.wallets = self.db.wallets

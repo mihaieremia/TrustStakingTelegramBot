@@ -46,7 +46,7 @@ oldAvaiable = 0.0
 def telegram_bot_sendtext(job):
     subscription = job.job.context
     global oldAvaiable
-    bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
+    bot_token = '1724076081:AAE0US-BoKRnSdfiF_V7j9zvzNSgPqAjdB4'
     subscribed_users = telegramDb.get_subscribed_users(subscription)
     TS = Agency()
     newAvailable = TS.maxDelegationCap - TS.totalActiveStake
