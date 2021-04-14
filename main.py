@@ -27,7 +27,9 @@ reply_buttons = InlineKeyboardMarkup([
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
-        text=emoji.cat + 'Main menu\n',
+        text=emoji.cat + 'Main menu\n'
+             'This is the testing bot. \n'
+             'Please refer to @TrustStakingBot for the official release.',
         reply_markup=reply_buttons,
     )
     return MainMenu
@@ -39,7 +41,9 @@ def main_menu(update: Update, context: CallbackContext):
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
-        text=emoji.cat + 'Main menu\n',
+        text=emoji.cat + 'Main menu\n'
+             'This is the testing bot. \n'
+             'Please refer to @TrustStakingBot for the official release.',
         reply_markup=reply_buttons,
     )
     return MainMenu

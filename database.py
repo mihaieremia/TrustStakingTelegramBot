@@ -6,7 +6,7 @@ from utils import db_token
 class Database:
     def __init__(self):
         self.client = pymongo.MongoClient(db_token)
-        self.db = self.client.telegramBot
+        self.db = self.client.devTelegramBot
 
         self.users = self.db.users
         self.wallets = self.db.wallets
