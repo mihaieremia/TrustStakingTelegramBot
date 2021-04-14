@@ -2,7 +2,7 @@ from telegram import *
 from telegram.ext import *
 
 import emoji
-from agency_info import agency_info_handle, Agency
+from agency_info import agency_info_handle, Agency, agency_info_handle_extra, update_agency_info
 from database import Database
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
@@ -80,6 +80,8 @@ def main():
                 CallbackQueryHandler(subscriptions, pattern='subscriptions')
             ],
             AgencyInfo: [
+                CallbackQueryHandler(agency_info_handle_extra, pattern='more_info'),
+                CallbackQueryHandler(agency_info_handle, pattern='less_info'),
                 CallbackQueryHandler(main_menu, pattern='back')
             ],
             RedelegationPerion: [
@@ -104,6 +106,7 @@ def main():
 
     dp.add_handler(conv_handler)
     updater.job_queue.run_repeating(telegram_bot_sendtext, 3, context="availableSpace")
+    updater.job_queue.run_repeating(update_agency_info, 15, context="availableSpace")
     updater.start_polling()
 
     updater.idle()
