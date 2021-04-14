@@ -430,9 +430,9 @@ def change_agency(update: Update, context: CallbackContext):
         bot.edit_message_text(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id,
-            text='Type @TrustStakingBot *agency_name* to set a new agency by default\n'
+            text='Type @TrustStakingAvailableSupplyBot *agency_name* to set a new agency by default\n'
                  'ex: \n'
-                 '    @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n'
+                 '    @TrustStakingAvailableSupplyBot tr -> a list including all agencies that include "tr" in their name will appear.\n'
                  '    Select the one that you want from the list.',
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
