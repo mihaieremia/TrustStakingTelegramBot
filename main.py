@@ -1,17 +1,18 @@
 from telegram import *
 from telegram.ext import *
 
-import emoji
-from agency_info import agency_info_handle, Agency, agency_info_handle_extra, update_agency_info
-from database import Database
+from agency_info import agency_info_handle, agency_info_handle_extra, update_agency_info, GTS
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
-import requests
 from utils import *
+from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet
 
 reply_buttons = InlineKeyboardMarkup([
     [
         InlineKeyboardButton(emoji.info + " Agency info", callback_data='agency_info')
+    ],
+    [
+        InlineKeyboardButton(emoji.credit_card + " My wallets", callback_data='wallets')
     ],
     [
         InlineKeyboardButton(emoji.pencil + "Find optimal redelegation period", callback_data='redelegation_period')
@@ -20,7 +21,7 @@ reply_buttons = InlineKeyboardMarkup([
         InlineKeyboardButton(emoji.mail + "Subscriptions", callback_data='subscriptions')
     ]
 ])
-telegramDb = Database()
+
 
 
 def start(update: Update, context: CallbackContext):
@@ -50,9 +51,9 @@ oldAvaiable = 0.0
 def telegram_bot_sendtext(job):
     subscription = job.job.context
     global oldAvaiable
-    bot_token = '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4'
+    global GTS
+    TS = GTS
     subscribed_users = telegramDb.get_subscribed_users(subscription)
-    TS = Agency()
     newAvailable = TS.maxDelegationCap - TS.totalActiveStake
     if newAvailable != oldAvaiable:
         print("Old Available: ", oldAvaiable)
@@ -65,24 +66,40 @@ def telegram_bot_sendtext(job):
                             + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
                 response = requests.get(send_text)
 
-def main():
 
-    updater = Updater(
-        '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4')
+def main():
+    updater = Updater(bot_token)
     dp = updater.dispatcher
-    
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             MainMenu: [
                 CallbackQueryHandler(agency_info_handle, pattern='agency_info'),
                 CallbackQueryHandler(redelegation_period, pattern='redelegation_period'),
-                CallbackQueryHandler(subscriptions, pattern='subscriptions')
+                CallbackQueryHandler(subscriptions, pattern='subscriptions'),
+                CallbackQueryHandler(wallets, pattern='wallets')
             ],
             AgencyInfo: [
                 CallbackQueryHandler(agency_info_handle_extra, pattern='more_info'),
                 CallbackQueryHandler(agency_info_handle, pattern='less_info'),
                 CallbackQueryHandler(main_menu, pattern='back')
+            ],
+            Wallets: [
+                CallbackQueryHandler(wallet_configuration, pattern='add_wallet'),
+                CallbackQueryHandler(wallet_info, pattern='^erd.*'),
+                CallbackQueryHandler(main_menu, pattern='back')
+            ],
+            WalletStatus: [
+                CallbackQueryHandler(rename_wallet, pattern='rename'),
+                MessageHandler(Filters.text & ~Filters.command, rename_wallet),
+                CallbackQueryHandler(delete_wallet, pattern='delete'),
+                CallbackQueryHandler(wallets, pattern='back')
+
+            ],
+            WalletConfiguration: [
+                MessageHandler(Filters.text & ~Filters.command, wallet_configuration),
+                CallbackQueryHandler(wallets, pattern='back')
             ],
             RedelegationPerion: [
                 MessageHandler(Filters.text & ~Filters.command, send_result),
@@ -106,10 +123,12 @@ def main():
 
     dp.add_handler(conv_handler)
     updater.job_queue.run_repeating(telegram_bot_sendtext, 3, context="availableSpace")
-    updater.job_queue.run_repeating(update_agency_info, 15, context="availableSpace")
+    updater.job_queue.run_repeating(update_agency_info, 15, context="agency_info")
+    updater.job_queue.run_repeating(update_price, 120, context="price_update")
     updater.start_polling()
 
     updater.idle()
+
 
 if __name__ == "__main__":
     main()
