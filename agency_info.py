@@ -33,9 +33,9 @@ class Agency:
         self.topUp = 0
         if extra_info:
             if self.__node_status():
-                print("Nodes status read.")
+                print("\tNodes status read.")
                 if self.__info():
-                    print("Apr+topup status read.")
+                    print("\tApr+topup status read.")
 
     def query(self, function, args=[]):
         return self.get_value(self.contract.query(self.proxy, function, args))
@@ -45,7 +45,7 @@ class Agency:
         return number // 10 ** (18 - decimals) / 10 ** decimals
 
     def get_value(self, obj):
-        if obj[0] == "":
+        if obj == [] or obj[0] == "":
             return 0
         return json.loads(obj[0].to_json())['number']
 
@@ -55,22 +55,29 @@ class Agency:
         params = {'provider': TrustStaking_contract.address,
                   'from': 0,
                   'size': 100,
-                  # 'status': 'jailed'
                   }
         try:
             resp = requests.get(url, params)
             data = resp.json()
+            print(f'\t__node_status reply: {data}')
             for node in data:
                 self.nodes[node['status']]['total'] += 1
-                if node['online']:
+                if isinstance(node, dict) and 'online' in node.keys() and node['online']:
                     self.nodes[node['status']]['online'] += 1
             self.nodes['total']['staked'] = self.nodes['queued']['total'] + self.nodes['jailed']['total']
             self.nodes['total']['active'] = self.nodes['eligible']['total'] + self.nodes['waiting']['total'] + \
                                             self.nodes['new']['total']
             return True
-        except Exception as e:
-            print("Error: %s" % str(e))
+        except KeyError as e:
+            print("\tKeyError: %s" % str(e))
             return False
+        except TypeError as e:
+            print("\tTypeError: %s" % str(e))
+            return False
+        except Exception as e:
+            print("\tError: %s" % str(e))
+            return False
+
 
     def __info(self):
         print("__info called")
@@ -79,16 +86,23 @@ class Agency:
         try:
             resp = requests.get(url, params)
             data = resp.json()
+            print(f'\t__info reply: {data}')
             self.APR = data[0]['apr']
             self.topUp = (self.convert_number(int(data[0]['topUp'])) + 2500 * self.nodes['total']['staked']) / \
                          self.nodes['total']['active']
-            print(self.APR, self.topUp)
             return True
+        except KeyError as e:
+            print("\tKeyError: %s" % str(e))
+            return False
+        except TypeError as e:
+            print("\tTypeError: %s" % str(e))
+            return False
         except Exception as e:
-            print("Error: %s" % str(e))
+            print("\tError: %s" % str(e))
             return False
 
     def get_address_info(self, address):
+        print("get_address_info called")
         addr = f"0x{Address(address).hex()}"
         claimable = self.convert_number(
             self.get_value(self.contract.query(self.proxy, 'getClaimableRewards', [addr])), 6)
@@ -106,9 +120,16 @@ class Agency:
         try:
             resp = requests.get(url)
             data = resp.json()
+            print(f'\tget_active_balance reply: {data}')
             return self.convert_number(float(data['balance']), 6)
+        except KeyError as e:
+            print("\tKeyError: %s" % str(e))
+            return '-'
+        except TypeError as e:
+            print("\tTypeError: %s" % str(e))
+            return '-'
         except Exception as e:
-            print("Error: %s" % str(e))
+            print("\tError: %s" % str(e))
             return '-'
 
 
@@ -167,7 +188,7 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
                                         TS.topUp, TS.APR,
                                         TS.nodes['eligible']['online'],
                                         TS.nodes['eligible']['total'] - TS.nodes['eligible']['online'],
-                                        TS.nodgites['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
+                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['waiting']['online'],
                                         TS.nodes['waiting']['total'] - TS.nodes['waiting']['online'],
                                         TS.nodes['queued']['online'],

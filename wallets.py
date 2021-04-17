@@ -1,6 +1,8 @@
 import re
 import time
 from datetime import datetime, timedelta
+
+from erdpy import errors
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from threading import Thread
 from agency_info import Agency, GTS
@@ -40,6 +42,7 @@ def wallet_configuration(update, context):
     try:
         msg = update.message.text
     except:
+        print("\tphase 1 enter wallet")
         query = update.callback_query
         keyboard = InlineKeyboardMarkup([
             [
@@ -62,6 +65,7 @@ def wallet_configuration(update, context):
     user_id = update.effective_chat['id']
     user = telegramDb.get_user(user_id)
     if wallet_pattern.match(msg):
+        print("\tphase 2 enter label")
         try:
             Address(msg)._assert_validity()
             if user is None:
@@ -69,14 +73,18 @@ def wallet_configuration(update, context):
             text = "Please enter a label for wallet address:\n<code>" + msg + "</code>"
             if not telegramDb.add_wallet(user_id, msg, None):
                 text = "You already have this address saved!\nPlease enter another one!"
-        except:
+        except errors.EmptyAddressError():
             text = 'Address invalid!'
+        except Exception as e:
+            print(f"\t\t {e}")
+            text = 'Error when entering the addres. Please try again.'
         update.message.reply_text(
             text=text,
             reply_markup=reply_markup,
             parse_mode=ParseMode.HTML
         )
     else:
+        print("\tphase 3 finish")
         wallet = telegramDb.get_wallet(user_id, None)
         text = "Wallet saved"
         if wallet['label'] is None:
@@ -116,8 +124,8 @@ def rename_wallet(update, context):
     except AttributeError:
         query = update.callback_query
         bot = context.bot
-        label = query.data.split("_")[1]
-        wallet = telegramDb.get_wallet(user_id, '^' + label +'$')
+        label = query.data.split("^_^")[1]
+        wallet = telegramDb.get_wallet(user_id, '^' + label + '$')
         telegramDb.set_label(user_id, wallet['address'], "toberenamed_" + label)
         bot.edit_message_text(
             chat_id=query.message.chat_id,
@@ -140,8 +148,8 @@ def delete_wallet(update, context):
 
     query = update.callback_query
     bot = context.bot
-    label = query.data.split("_")[1]
-    wallet = telegramDb.get_wallet(user_id, '^' + label +'$')
+    label = query.data.split("^_^")[1]
+    wallet = telegramDb.get_wallet(user_id, '^' + label + '$')
     text = 'Wallet deleted'
     if not telegramDb.delete_wallet(user_id, wallet['address']):
         text = "Wallet has not been removed due to an error\nPlease try again!"
@@ -172,8 +180,8 @@ def wallet_info(update, context):
         #     InlineKeyboardButton(emoji.anticlockwise + " Restake", callback_data='restake')
         # ],
         [
-            InlineKeyboardButton(emoji.bookmark + " Rename", callback_data='rename_' + wallet['label']),
-            InlineKeyboardButton(emoji.trash + " Delete", callback_data='delete_' + wallet['label'])
+            InlineKeyboardButton(emoji.bookmark + " Rename", callback_data='rename^_^' + wallet['label']),
+            InlineKeyboardButton(emoji.trash + " Delete", callback_data='delete^_^' + wallet['label'])
         ],
         [
             InlineKeyboardButton(emoji.back + " Back", callback_data='back')
