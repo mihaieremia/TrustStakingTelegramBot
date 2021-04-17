@@ -37,6 +37,7 @@ class Agency:
                 if self.__info():
                     print("Apr+topup status read.")
 
+
     def query(self, function, args=[]):
         return self.get_value(self.contract.query(self.proxy, function, args))
 
@@ -112,7 +113,7 @@ class Agency:
             return '-'
 
 
-GTS = Agency(extra_info=True)  # extra_info=True
+GTS = Agency(extra_info=True)
 
 
 def update_agency_info(job):
