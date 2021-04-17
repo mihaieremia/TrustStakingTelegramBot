@@ -5,7 +5,7 @@ from agency_info import agency_info_handle, agency_info_handle_extra, update_age
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
 from utils import *
-from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet
+from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator
 
 reply_buttons = InlineKeyboardMarkup([
     [
@@ -90,8 +90,12 @@ def main():
                 CallbackQueryHandler(rename_wallet, pattern='rename'),
                 MessageHandler(Filters.text & ~Filters.command, rename_wallet),
                 CallbackQueryHandler(delete_wallet, pattern='delete'),
+                CallbackQueryHandler(mex_calculator, pattern='mex'),
                 CallbackQueryHandler(wallets, pattern='back')
 
+            ],
+            MEXCalc: [
+                CallbackQueryHandler(wallets, pattern='back')
             ],
             WalletConfiguration: [
                 MessageHandler(Filters.text & ~Filters.command, wallet_configuration),

@@ -1,5 +1,5 @@
 MainMenu, AgencyInfo, Wallets, WalletConfiguration, WalletStatus, \
-RedelegationPerion, SubscriptionsMenu, availableSpace, = range(8)
+RedelegationPerion, SubscriptionsMenu, availableSpace, MEXCalc = range(9)
 
 import requests
 from erdpy.contracts import SmartContract
@@ -41,6 +41,14 @@ wallet_information = '''
 <code>Active delegation:</code> {} <code>eGLD</code> (${:.2f})
 <code>Claimable:</code> {} <code>eGLD</code> (${:.2f})
 <code>Total rewards:</code> {} <code>eGLD</code> (${:.2f})
+'''
+
+mex_calculator_info = '''
+<code>You will receive </code>{:.6} MEX<code> in total </code>per week<code>.
+-</code>{:.6} MEX<code> for </code>{:.6} eGLD<code> staked
+-</code>{:.6} MEX<code> for </code>{:.6} eGLD<code> available(stored in Web Wallet, Maiar, Ledger)
+
+*For the available amounts, if you have more that 5 referrals, you shall multiple with 1.25 for the exact amount.</code>
 '''
 delegate = "wallet.elrond.com/hook/transaction?receiver={}&value={}&gasLimit=12000000&data=delegate&callbackUrl=none"  # b.walletHook, utils.ContractAddress, iAmount)
 undelegate = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=unDelegate@{}&callbackUrl=none"

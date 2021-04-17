@@ -161,6 +161,36 @@ def delete_wallet(update, context):
     )
     return WalletStatus
 
+def mex_calculator(update, context):
+    print("mex_calculator called")
+
+    reply_markup = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(emoji.back + " Back", callback_data='back')
+        ]
+    ])
+    user_id = update.effective_chat['id']
+
+    query = update.callback_query
+    bot = context.bot
+    label = query.data.split("^_^")[1]
+    wallet = telegramDb.get_wallet(user_id, '^' + label + '$')
+    available = wallet['available']
+    active = wallet['active']
+    mex_available = available ** 0.95
+    mex_active = active ** 0.95 * 1.5
+    total = mex_active + mex_available
+    text = mex_calculator_info.format(total, mex_active, active, mex_available, available)
+    bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML
+
+    )
+    return MEXCalc
+
 def wallet_info(update, context):
     print("wallet_info called")
     global GTS
@@ -179,6 +209,9 @@ def wallet_info(update, context):
         #     InlineKeyboardButton(emoji.money + " Claim", url=claimURL.format(GTS.contract.address)),
         #     InlineKeyboardButton(emoji.anticlockwise + " Restake", callback_data='restake')
         # ],
+        [
+            InlineKeyboardButton(emoji.pocket_calculator + " MEX calculator", callback_data='mex^_^' + wallet['label'])
+        ],
         [
             InlineKeyboardButton(emoji.bookmark + " Rename", callback_data='rename^_^' + wallet['label']),
             InlineKeyboardButton(emoji.trash + " Delete", callback_data='delete^_^' + wallet['label'])
