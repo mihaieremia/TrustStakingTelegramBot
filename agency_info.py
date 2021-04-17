@@ -1,10 +1,10 @@
+import binascii
 import json
 
 import requests
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram import Update
 from telegram.ext import CallbackContext
-
 import emoji
 from utils import *
 
@@ -32,44 +32,85 @@ class Agency:
         self.APR = 0
         self.topUp = 0
         if extra_info:
-            self.__node_status()
-            self.__info()
+            if self.__node_status():
+                print("Nodes status read.")
+                if self.__info():
+                    print("Apr+topup status read.")
+
 
     def query(self, function, args=[]):
         return self.get_value(self.contract.query(self.proxy, function, args))
 
-    def convert_number(self, number):
-        return number // 10000000000000000 / 100
+    def convert_number(self, number, decimals=2):
+
+        return number // 10 ** (18 - decimals) / 10 ** decimals
 
     def get_value(self, obj):
+        if obj[0] == "":
+            return 0
         return json.loads(obj[0].to_json())['number']
 
     def __node_status(self):
-        url = 'https://beta-api.elrond.com/nodes'
+        print("__node_status called")
+        url = 'https://api.elrond.com/nodes'
         params = {'provider': TrustStaking_contract.address,
                   'from': 0,
                   'size': 100,
                   # 'status': 'jailed'
                   }
-        resp = requests.get(url, params)
-        data = resp.json()
-        for node in data:
-            self.nodes[node['status']]['total'] += 1
-            if node['online']:
-                self.nodes[node['status']]['online'] += 1
-        self.nodes['total']['staked'] = self.nodes['queued']['total'] + self.nodes['jailed']['total']
-        self.nodes['total']['active'] = self.nodes['eligible']['total'] + self.nodes['waiting']['total'] + \
-                                        self.nodes['new']['total']
+        try:
+            resp = requests.get(url, params)
+            data = resp.json()
+            for node in data:
+                self.nodes[node['status']]['total'] += 1
+                if node['online']:
+                    self.nodes[node['status']]['online'] += 1
+            self.nodes['total']['staked'] = self.nodes['queued']['total'] + self.nodes['jailed']['total']
+            self.nodes['total']['active'] = self.nodes['eligible']['total'] + self.nodes['waiting']['total'] + \
+                                            self.nodes['new']['total']
+            return True
+        except Exception as e:
+            print("Error: %s" % str(e))
+            return False
 
     def __info(self):
+        print("__info called")
         url = 'https://api.elrond.com/providers'
         params = {'identity': 'truststaking'}
-        resp = requests.get(url, params)
-        data = resp.json()
-        self.APR = data[0]['apr']
-        self.topUp = (self.convert_number(int(data[0]['topUp'])) + 2500 * self.nodes['total']['staked']) / \
-                     self.nodes['total']['active']
-        print(self.APR, self.topUp)
+        try:
+            resp = requests.get(url, params)
+            data = resp.json()
+            self.APR = data[0]['apr']
+            self.topUp = (self.convert_number(int(data[0]['topUp'])) + 2500 * self.nodes['total']['staked']) / \
+                         self.nodes['total']['active']
+            print(self.APR, self.topUp)
+            return True
+        except Exception as e:
+            print("Error: %s" % str(e))
+            return False
+
+    def get_address_info(self, address):
+        addr = f"0x{Address(address).hex()}"
+        claimable = self.convert_number(
+            self.get_value(self.contract.query(self.proxy, 'getClaimableRewards', [addr])), 6)
+        totalRewards = self.convert_number(
+            self.get_value(self.contract.query(self.proxy, 'getTotalCumulatedRewardsForUser', [addr])), 6)
+        active = self.convert_number(
+            self.get_value(self.contract.query(self.proxy, 'getUserActiveStake', [addr])), 6)
+        undelegated_list = self.contract.query(self.proxy, 'getUserUnDelegatedList', [addr])
+        available = self.get_active_balance(address)
+        return available, active, claimable, totalRewards
+
+    def get_active_balance(self, addr):
+        print("get_active_balance called")
+        url = 'https://api.elrond.com/accounts/' + addr
+        try:
+            resp = requests.get(url)
+            data = resp.json()
+            return self.convert_number(float(data['balance']), 6)
+        except Exception as e:
+            print("Error: %s" % str(e))
+            return '-'
 
 
 GTS = Agency(extra_info=True)
@@ -81,6 +122,7 @@ def update_agency_info(job):
 
 
 def agency_info_handle(update: Update, context: CallbackContext):
+    global GTS
     TS = GTS
     query = update.callback_query
     bot = context.bot
@@ -110,6 +152,7 @@ def agency_info_handle(update: Update, context: CallbackContext):
 
 
 def agency_info_handle_extra(update: Update, context: CallbackContext):
+    global GTS
     TS = GTS
     query = update.callback_query
     bot = context.bot
@@ -125,9 +168,9 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
                                         TS.topUp, TS.APR,
                                         TS.nodes['eligible']['online'],
                                         TS.nodes['eligible']['total'] - TS.nodes['eligible']['online'],
+                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['waiting']['online'],
                                         TS.nodes['waiting']['total'] - TS.nodes['waiting']['online'],
-                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['queued']['online'],
                                         TS.nodes['queued']['total'] - TS.nodes['queued']['online'],
                                         TS.nodes['jailed']['online'],
