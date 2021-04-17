@@ -62,9 +62,16 @@ def get_current_price():
     try:
         resp = requests.get(url)
         data = resp.json()
+        print(f'\tget_current_price reply: {data}')
         return data[-1]['value']
+    except KeyError as e:
+        print("\tKeyError: %s" % str(e))
+        return 0
+    except TypeError as e:
+        print("\tTypeError: %s" % str(e))
+        return 0
     except Exception as e:
-        print("Error: %s" % str(e))
+        print("\tError: %s" % str(e))
         return 0
 
 

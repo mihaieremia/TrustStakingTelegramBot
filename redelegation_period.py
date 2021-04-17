@@ -11,6 +11,7 @@ def total_amount(n, m, P, APR, fee=0.0001355):
 
 
 def get_best_step(init_delegation, APR, total_days=365):
+    print("get_best_step called")
     max_step = 1
     max_amount = init_delegation
     steps_to_test = range(1, total_days)
@@ -22,7 +23,7 @@ def get_best_step(init_delegation, APR, total_days=365):
         if max_amount < amount:
             max_amount = amount
             max_step = total_days // step
-    print("Best value with step : ", max_step, " ", max_amount)
+    print("\tBest value with step : ", max_step, " ", max_amount)
     reward = max_amount - init_delegation
     return max_step, reward
 

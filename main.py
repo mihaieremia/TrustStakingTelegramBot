@@ -119,7 +119,7 @@ def main():
 
     dp.add_handler(conv_handler)
     updater.job_queue.run_repeating(telegram_bot_sendtext, 3, context="availableSpace")
-    updater.job_queue.run_repeating(update_agency_info, 15, context="agency_info")
+    updater.job_queue.run_repeating(update_agency_info, 60, context="agency_info")
     updater.job_queue.run_repeating(update_price, 120, context="price_update")
 
     updater.start_polling()
