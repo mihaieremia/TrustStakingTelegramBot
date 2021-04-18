@@ -138,6 +138,7 @@ GTS = Agency(extra_info=True)
 
 
 def update_agency_info(job):
+    print('update_agency_info caled')
     global GTS
     GTS = Agency(extra_info=True)
 

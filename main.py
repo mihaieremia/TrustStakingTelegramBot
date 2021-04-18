@@ -1,11 +1,12 @@
 from telegram import *
 from telegram.ext import *
 
-from agency_info import agency_info_handle, agency_info_handle_extra, update_agency_info, GTS
+from agency_info import Agency, agency_info_handle, agency_info_handle_extra, update_agency_info, GTS
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
 from utils import *
 from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator
+from threading import Thread
 
 reply_buttons = InlineKeyboardMarkup([
     [
@@ -43,25 +44,30 @@ def main_menu(update: Update, context: CallbackContext):
     )
     return MainMenu
 
-oldAvaiable = 0.0
+oldAvailable = 0.0
 def telegram_bot_sendtext(job):
+    print('telegram_bot_sendtext called')
     subscription = job.job.context
-    global oldAvaiable
-    global GTS
-    TS = GTS
+    global oldAvailable
+    TS = Agency()
     subscribed_users = telegramDb.get_subscribed_users(subscription)
     newAvailable = TS.maxDelegationCap - TS.totalActiveStake
-    if newAvailable != oldAvaiable:
-        print("Old Available: ", oldAvaiable)
-        oldAvaiable = newAvailable
-        print("Available: ", newAvailable)
-        for user in subscribed_users:
-            if newAvailable >= user['availableSpace']:
-                bot_message = emoji.attention + " {:.2f}".format(newAvailable) + " eGLD available to be staked."
-                send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                            + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
-                response = requests.get(send_text)
+    if newAvailable != oldAvailable:
+        print("\tOld Available: ", oldAvailable)
+        oldAvailable = newAvailable
+        print("\tAvailable: ", newAvailable)
+        background_thread = Thread(target=check_and_notify, args=(subscribed_users, oldAvailable, newAvailable))
+        background_thread.start()
 
+
+def check_and_notify(subscribed_users, oldAvailable, newAvailable):
+    print('\tcheck_and_notify called')
+    for user in subscribed_users:
+        if newAvailable >= user['availableSpace']:
+            bot_message = emoji.attention + " {:.2f}".format(newAvailable) + " eGLD available to be staked."
+            send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                        + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
+            response = requests.get(send_text)
 
 def main():
     updater = Updater(bot_token)
@@ -122,7 +128,7 @@ def main():
     )
 
     dp.add_handler(conv_handler)
-    updater.job_queue.run_repeating(telegram_bot_sendtext, 3, context="availableSpace")
+    updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agency_info, 60, context="agency_info")
     updater.job_queue.run_repeating(update_price, 120, context="price_update")
 
