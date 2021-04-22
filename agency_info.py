@@ -17,10 +17,11 @@ class Agency:
         self.delegators = self.query('getNumUsers')
         self.totalActiveStake = self.convert_number(self.query('getTotalActiveStake'))
         config = self.contract.query(self.proxy, 'getContractConfig', [])
-        self.serviceFee = json.loads(config[1].to_json())['number'] / 100
-        self.maxDelegationCap = self.convert_number(json.loads(config[2].to_json())['number'])
-        self.delegationCap = int(self.totalActiveStake * 100 / self.maxDelegationCap * 100) / 100
-        self.changebleFee = json.loads(config[6].to_json())['number'] == 1953658213
+        self.serviceFee, self.changebleFee = self.get_agency_fee(config)
+        self.maxDelegationCap, self.delegationCap = self.get_agency_cap(config)
+        self.name = self.get_agency_name()
+        print(self.name)
+
         self.nodes = {
             'eligible': {'online': 0, 'total': 0},
             'waiting': {'online': 0, 'total': 0},
@@ -49,6 +50,34 @@ class Agency:
         if obj == [] or obj[0] == "":
             return 0
         return json.loads(obj[0].to_json())['number']
+
+    def get_agency_name(self):
+        metaData = self.contract.query(self.proxy, 'getMetaData', [])
+        if metaData == []:
+            return ""
+        name_in_hex = json.loads(metaData[0].to_json())['hex']
+        name = bytes.fromhex(name_in_hex).decode('utf-8')
+        return name
+
+    def get_agency_fee(self, config):
+        if config[1] == None:
+            fee = 0
+        else:
+            fee = json.loads(config[1].to_json())['number'] / 100
+        if config[6] == []:
+            changeble = False
+        else:
+            changeble = json.loads(config[6].to_json())['number'] == 1953658213
+        return fee, changeble
+
+    def get_agency_cap(self, config):
+        if isinstance(config[2], str):
+            maxDelegationCap = "uncap"
+            delegationCap = 0
+        else:
+            maxDelegationCap = self.convert_number(json.loads(config[2].to_json())['number'])
+            delegationCap = int(self.totalActiveStake * 100 / maxDelegationCap * 100) / 100
+        return maxDelegationCap, delegationCap
 
     def __node_status(self):
         print("__node_status called")
@@ -112,8 +141,8 @@ class Agency:
         active = self.convert_number(
             self.get_value(self.contract.query(self.proxy, 'getUserActiveStake', [addr])), 6)
         undelegated_list = self.contract.query(self.proxy, 'getUserUnDelegatedList', [addr])
-        available = self.get_active_balance(address)
-        return available, active, claimable, totalRewards
+
+        return active, claimable, totalRewards
 
     def get_active_balance(self, addr):
         print("get_active_balance called")
@@ -134,13 +163,28 @@ class Agency:
             return '-'
 
 
-GTS = Agency(extra_info=True)
+def get_all_contracts():
+    reply = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqylllslmq6y6').query(mainnet_proxy, 'getAllContractAddresses', [])
+    agencies = []
+    for address in reply:
+        hex_address = json.loads(address.to_json())['hex']
+        contract = Address(hex_address).bech32()
+        agency = Agency(contract=SmartContract(contract))
+        if agency.name is not '':
+            agencies.append(agency)
+            print(agencies[-1].contract.address)
+    print(len(agencies))
+    return agencies
 
+GTS = Agency(extra_info=True)
+AllAgencies = get_all_contracts()
 
 def update_agency_info(job):
     print('update_agency_info caled')
     global GTS
+    global AllAgencies
     GTS = Agency(extra_info=True)
+    AllAgencies = get_all_contracts()
 
 
 def agency_info_handle(update: Update, context: CallbackContext):
