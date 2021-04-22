@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from erdpy import errors
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from threading import Thread
-from agency_info import Agency, GTS
+from agency_info import Agency, GTS, get_all_contracts
+from database import telegramDb
 from utils import *
 
 
@@ -34,7 +35,11 @@ def update_wallets(user_id, user_wallets):
     for wallet in user_wallets:
         now = datetime.now()
         if now - wallet['last_update'] > timedelta(seconds=30):
-            available, active, claimable, totalRewards = GTS.get_address_info(wallet['address'])
+            available = GTS.get_active_balance(wallet['address'])
+            for agency in get_all_contracts():
+                active, claimable, totalRewards = agency.get_address_info(wallet['address'])
+                if active >= 1:
+                    print(agency.query('getMetaData'), [])
             telegramDb.update_wallet(user_id, wallet['address'], available, active, claimable, totalRewards)
 
 def wallet_configuration(update, context):
