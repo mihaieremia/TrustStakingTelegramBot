@@ -1,10 +1,12 @@
 from telegram import *
 from telegram.ext import *
 
-from agency_info import Agency, agency_info_handle, agency_info_handle_extra, update_agency_info, GTS
+from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
+    update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
 from utils import *
+from database import telegramDb
 from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator
 from threading import Thread
 
@@ -26,6 +28,20 @@ reply_buttons = InlineKeyboardMarkup([
 
 
 def start(update: Update, context: CallbackContext):
+    user_id = update.effective_chat['id']
+    print("start called by: ", user_id)
+    message_id = update.effective_message['message_id']
+    if user_id < 0:
+        try:
+            context.bot.deleteMessage(user_id, message_id)
+        except Exception as e:
+            print("\t Delete message failed:", e)
+        return
+    background_thread = Thread(target=update_price, args=(None,))
+    background_thread.start()
+    background_thread = Thread(target=update_user_agency, args=(user_id,))
+    background_thread.start()
+
     update.message.reply_text(
         text=emoji.cat + 'Main menu\n',
         reply_markup=reply_buttons,
@@ -34,6 +50,10 @@ def start(update: Update, context: CallbackContext):
 
 
 def main_menu(update: Update, context: CallbackContext):
+    user_id = update.effective_chat['id']
+    background_thread = Thread(target=update_user_agency, args=(user_id,))
+    background_thread.start()
+
     query = update.callback_query
     bot = context.bot
     bot.edit_message_text(
@@ -56,11 +76,11 @@ def telegram_bot_sendtext(job):
         print("\tOld Available: ", oldAvailable)
         oldAvailable = newAvailable
         print("\tAvailable: ", newAvailable)
-        background_thread = Thread(target=check_and_notify, args=(subscribed_users, oldAvailable, newAvailable))
+        background_thread = Thread(target=check_and_notify, args=(subscribed_users, newAvailable))
         background_thread.start()
 
 
-def check_and_notify(subscribed_users, oldAvailable, newAvailable):
+def check_and_notify(subscribed_users, newAvailable):
     print('\tcheck_and_notify called')
     for user in subscribed_users:
         if newAvailable >= user['availableSpace']:
@@ -85,7 +105,12 @@ def main():
             AgencyInfo: [
                 CallbackQueryHandler(agency_info_handle_extra, pattern='more_info'),
                 CallbackQueryHandler(agency_info_handle, pattern='less_info'),
+                CallbackQueryHandler(change_agency, pattern='change_agency'),
                 CallbackQueryHandler(main_menu, pattern='back')
+            ],
+            ChangeAgency: [
+                MessageHandler(Filters.text & ~Filters.command, change_agency),
+                CallbackQueryHandler(agency_info_handle, pattern='back')
             ],
             Wallets: [
                 CallbackQueryHandler(wallet_configuration, pattern='add_wallet'),
@@ -124,15 +149,19 @@ def main():
                 CallbackQueryHandler(subscriptions, pattern='back'),
             ]
         },
-        fallbacks=[CommandHandler('start', start)]
-    )
+        fallbacks=[CommandHandler('start', start)])
 
     dp.add_handler(conv_handler)
-    updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
-    updater.job_queue.run_repeating(update_agency_info, 60, context="agency_info")
-    updater.job_queue.run_repeating(update_price, 120, context="price_update")
 
+    dp.add_handler(InlineQueryHandler(agencies_search))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, show_agency))
+
+    updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
+    updater.job_queue.run_repeating(update_agencies_info, 600, context="update_agencies_info",)
+    updater.job_queue.run_repeating(update_price, 120, context="price_update",)
     updater.start_polling()
+    background_thread = Thread(target=get_all_contracts)
+    background_thread.start()
 
     updater.idle()
 

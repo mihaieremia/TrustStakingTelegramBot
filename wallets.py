@@ -5,13 +5,12 @@ from datetime import datetime, timedelta
 from erdpy import errors
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from threading import Thread
-from agency_info import Agency, GTS, get_all_contracts
+from agency_info import AllAgencies, get_user_staking_agencies
 from database import telegramDb
 from utils import *
 
 
 def get_keyboard(user_id, user_wallets):
-    global GTS
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(emoji.plus + " Add wallet", callback_data='add_wallet')
@@ -30,17 +29,31 @@ def get_keyboard(user_id, user_wallets):
         ])
     return keyboard
 
+
 def update_wallets(user_id, user_wallets):
     print("update_wallets called")
+    global AllAgencies
+    if len(AllAgencies.keys()) < 43:
+        for i in range(30):
+            if len(AllAgencies.keys()) >= 43:
+                break
+            print("\tsleeping")
+            time.sleep(0.01)
     for wallet in user_wallets:
+        print("\t wallet updating: ", wallet)
         now = datetime.now()
         if now - wallet['last_update'] > timedelta(seconds=30):
-            available = GTS.get_active_balance(wallet['address'])
-            for agency in get_all_contracts():
-                active, claimable, totalRewards = agency.get_address_info(wallet['address'])
+            available = get_active_balance(wallet['address'])
+            delegated_agencies = {}
+            for agency in get_user_staking_agencies(wallet['address']):
+                active, claimable, totalRewards = AllAgencies[agency].get_address_info(wallet['address'])
                 if active >= 1:
-                    print(agency.query('getMetaData'), [])
-            telegramDb.update_wallet(user_id, wallet['address'], available, active, claimable, totalRewards)
+                    delegated_agencies[AllAgencies[agency].name] = {'active': active,
+                                                                    'claimable': claimable,
+                                                                    'totalRewards': totalRewards}
+
+            telegramDb.update_wallet(user_id, wallet['address'], available, delegated_agencies)
+
 
 def wallet_configuration(update, context):
     print("wallet_configuration called")
@@ -141,6 +154,7 @@ def rename_wallet(update, context):
         )
     return WalletStatus
 
+
 def delete_wallet(update, context):
     print("delete_wallet called")
 
@@ -166,6 +180,7 @@ def delete_wallet(update, context):
     )
     return WalletStatus
 
+
 def mex_calculator(update, context):
     print("mex_calculator called")
 
@@ -181,7 +196,10 @@ def mex_calculator(update, context):
     label = query.data.split("^_^")[1]
     wallet = telegramDb.get_wallet(user_id, '^' + label + '$')
     available = wallet['available']
-    active = wallet['active']
+    active = 0
+    for agency in wallet['agencies'].keys():
+        active += wallet['agencies'][agency]['active']
+
     mex_available = available ** 0.95
     mex_active = active ** 0.95 * 1.5
     total = mex_active + mex_available
@@ -196,15 +214,15 @@ def mex_calculator(update, context):
     )
     return MEXCalc
 
+
 def wallet_info(update, context):
     print("wallet_info called")
-    global GTS
     global price
     query = update.callback_query
     address = query.data
     bot = context.bot
     user_id = query.from_user.id
-    wallet = telegramDb.get_wallet_byAddress(user_id, address)
+    wallet = telegramDb.get_wallet_by_address(user_id, address)
     keyboard = InlineKeyboardMarkup([
         # [
         #     InlineKeyboardButton(emoji.sparkles + " Delegate", callback_data='delegate'),
@@ -225,26 +243,20 @@ def wallet_info(update, context):
             InlineKeyboardButton(emoji.back + " Back", callback_data='back')
         ]
     ])
-
+    if price is None:
+        price = get_current_price()
     available = wallet['available']
-    active = wallet['active']
-    claimable = wallet['claimable']
-    totalRewards = wallet['totalRewards']
-    if available == 0 and active == 0 and claimable == 0 and totalRewards == 0:
-        for i in range(30):
-            time.sleep(0.05)
-            available = wallet['available']
-            active = wallet['active']
-            claimable = wallet['claimable']
-            totalRewards = wallet['totalRewards']
-            if not (available == 0 and active == 0 and claimable == 0 and totalRewards == 0):
-                break
     text = wallet_information.format(wallet['address'], wallet['label'], wallet['address'][:10], wallet['address'][-6:],
-                                     available, available * price,
-                                     active, active * price,
-                                     claimable, claimable * price,
-                                     totalRewards, totalRewards * price,
-                                     )
+                                     available, available * price)
+    for agency in wallet['agencies'].keys():
+        active = wallet['agencies'][agency]['active']
+        claimable = wallet['agencies'][agency]['claimable']
+        totalRewards = wallet['agencies'][agency]['totalRewards']
+        text += wallet_for_agency_info.format(agency,
+                                              active, active * price,
+                                              claimable, claimable * price,
+                                              totalRewards, totalRewards * price,
+                                              )
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
