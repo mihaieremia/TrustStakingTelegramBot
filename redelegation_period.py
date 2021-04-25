@@ -1,6 +1,8 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+import time
 
-import emoji
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ParseMode
+from agency_info import AllAgencies
+from database import telegramDb
 from utils import *
 
 
@@ -47,29 +49,48 @@ def redelegation_period(update, context):
 
 
 def send_result(update: Update, context):
+    global AllAgencies
+    user_id = update.effective_chat['id']
+    user_agency = telegramDb.get_user_agency(user_id)['name']
+    TS = AllAgencies[user_agency]
+    if TS.APR == 0:
+        for i in range(30):
+            TS = AllAgencies[user_agency]
+            if TS.APR != 0:
+                break
+            print("\tsleeping")
+            time.sleep(0.01)
+
     egld = update.message.text
+
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(emoji.back + " Back", callback_data='back')]
     ])
     try:
-        egld = float(egld)
-        if not egld > 0:
-            raise TypeError("You introduced a negative number.\n")
-        best_i, best_amount = get_best_step(egld, 17.9)
 
+        if not egld.isnumeric():
+            raise TypeError("NaN")
+        else:
+            egld = float(egld)
+            if not egld > 0:
+                raise TypeError("Negative number")
+        best_i, best_amount = get_best_step(egld, TS.APR)
+        text = best_period.format(best_i, best_amount, TS.APR, TS.name)
         update.message.reply_text(
-            text="Best APY for redelegation at %d days. Total reward after one year: %.6f \n" % (best_i, best_amount) +
-                 "You can indicate another eGLD amount to calculate the optimal redelegation period",
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.HTML,
+        )
+    except TypeError("Negative number"):
+        update.message.reply_text(
+            text="Please enter a positive number:",
             reply_markup=reply_markup
         )
-    except TypeError as e:
-        update.message.reply_text(
-            text=str(e) + "Please enter a positive number:",
-            reply_markup=reply_markup
-        )
-    except:
+    except TypeError("NaN"):
         update.message.reply_text(
             text="Please enter a number",
             reply_markup=reply_markup
         )
+    except Exception as e:
+        print("\tError: %s" % str(e))
     return RedelegationPerion

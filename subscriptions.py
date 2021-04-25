@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
-import emoji
+from database import telegramDb
 from utils import *
 
 
