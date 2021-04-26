@@ -59,11 +59,11 @@ mex_calculator_info = '''
 *For the available amounts, if you have more that 5 referrals, you shall multiple with 1.25 for the exact amount.</code>
 **Those values represents only an aproximation, the actual rewards may be different.
 '''
-delegate = "wallet.elrond.com/hook/transaction?receiver={}&value={}&gasLimit=12000000&data=delegate&callbackUrl=none"  # b.walletHook, utils.ContractAddress, iAmount)
-undelegate = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=unDelegate@{}&callbackUrl=none"
-withdraw = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=withdraw&callbackUrl=none"  # b.walletHook, utils.ContractAddress)
-claimURL = "https://wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=6000000&data=claimRewards&callbackUrl=none"
-restake = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=reDelegateRewards&callbackUrl=none"
+delegate = "wallet.elrond.com/hook/transaction?receiver={}&value={}&gasLimit=12000000&data=delegate"  # b.walletHook, utils.ContractAddress, iAmount)
+undelegate = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=unDelegate@{}"
+withdraw = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=withdraw"  # b.walletHook, utils.ContractAddress)
+claimURL = "https://wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=6000000&data=claimRewards"
+restake = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=reDelegateRewards"
 
 best_period = '''
 <code>Best APY for redelegation at</code> {:d} days. 
@@ -75,6 +75,13 @@ Change your default agency if you want to calculate the optimal redelegation per
 # <code>Nodes: </code>{}
 # <code>Top-up per node: </code>{} eGLD
 # <code>APR: </code>{}%
+
+choose_agency = '''
+Type @TrustStakingBot *agency_name* to set a new agency by default\n
+ex: \n
+    @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n
+    Select the one that you want from the list.
+'''
 
 
 def get_current_price():
