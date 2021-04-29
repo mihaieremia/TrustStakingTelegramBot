@@ -13,7 +13,7 @@ class Database:
         self.wallets = self.db.wallets
 
     def add_user(self, user_id):
-        self.users.insert_one({"_id": user_id, "availableSpace": 0})
+        self.users.insert_one({"_id": user_id, "availableSpace": []})
         return True
 
     def add_wallet(self, user_id, wallet_address, label):
@@ -53,17 +53,22 @@ class Database:
         return self.users.find_one({"_id": user_id})
 
     def get_subscribed_users(self, subscription):
-        return self.users.find({subscription: {"$gt": 0}})
+        return self.users.find({subscription: {"$not": {"$size": 0}}})
 
-    def subscribe(self, user_id, subscription, min_amount):
-        self.users.update_one({"_id": user_id}, {"$set": {subscription: min_amount}})
+    def subscribe(self, user_id, subscription, agency):
+        self.users.update_one({"_id": user_id}, {"$push": {subscription: agency}})
 
-    def unsubscribe(self, user_id, subscription):
-        self.users.update_one({"_id": user_id}, {"$set": {subscription: 0}})
+    def unsubscribe(self, user_id, subscription, agency):
+        user_subscription = self.users.find_one({"_id": user_id})[subscription]
+        user_subscription.remove(agency)
+        self.users.update_one({"_id": user_id}, {"$set": {subscription: user_subscription}})
 
-    def is_subscribed(self, user_id, subscription):
+    def is_subscribed(self, user_id, subscription, agency):
+        return agency in self.get_agency_subscribed(user_id, subscription)
+
+    def get_agency_subscribed(self, user_id, subscription):
         user = self.get_user(user_id)
-        return user[subscription] != 0
+        return user[subscription]
 
 
     def set_user_agency(self, user_id, agency):
@@ -83,3 +88,5 @@ class Database:
 
 
 telegramDb = Database()
+
+

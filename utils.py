@@ -15,6 +15,8 @@ default_agency = 'trust staking'
 db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority'
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 
+main_menu_message = emoji.cat + '''Main menu\n'''
+
 agency_info = '''
 <code>Agency: </code><a href="{}">{}</a>
 <code>Contract Address: </code>{}
@@ -30,11 +32,11 @@ agency_info = '''
 '''
 
 extra = '''
-<code>Eligible:</code> {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Waiting:</code>     {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Queued:</code>     {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>New:</code>             {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Jailed:</code>       {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Eligible:</code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Waiting: </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Queued:   </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>New:      </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Jailed:   </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
 '''
 
 wallet_information = '''
@@ -59,11 +61,11 @@ mex_calculator_info = '''
 *For the available amounts, if you have more that 5 referrals, you shall multiple with 1.25 for the exact amount.</code>
 **Those values represents only an aproximation, the actual rewards may be different.
 '''
-delegate = "wallet.elrond.com/hook/transaction?receiver={}&value={}&gasLimit=12000000&data=delegate&callbackUrl=none"  # b.walletHook, utils.ContractAddress, iAmount)
-undelegate = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=unDelegate@{}&callbackUrl=none"
-withdraw = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=withdraw&callbackUrl=none"  # b.walletHook, utils.ContractAddress)
-claimURL = "https://wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=6000000&data=claimRewards&callbackUrl=none"
-restake = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=reDelegateRewards&callbackUrl=none"
+delegate = "wallet.elrond.com/hook/transaction?receiver={}&value={}&gasLimit=12000000&data=delegate"  # b.walletHook, utils.ContractAddress, iAmount)
+undelegate = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=unDelegate@{}"
+withdraw = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=withdraw"  # b.walletHook, utils.ContractAddress)
+claimURL = "https://wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=6000000&data=claimRewards"
+restake = "wallet.elrond.com/hook/transaction?receiver={}&value=0&gasLimit=12000000&data=reDelegateRewards"
 
 best_period = '''
 <code>Best APY for redelegation at</code> {:d} days. 
@@ -75,6 +77,13 @@ Change your default agency if you want to calculate the optimal redelegation per
 # <code>Nodes: </code>{}
 # <code>Top-up per node: </code>{} eGLD
 # <code>APR: </code>{}%
+
+choose_agency = '''
+Type @TrustStakingBot *agency_name* to set a new agency by default\n
+ex: \n
+    @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n
+    Select the one that you want from the list.
+'''
 
 
 def get_current_price():

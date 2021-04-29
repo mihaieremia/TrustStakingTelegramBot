@@ -66,6 +66,8 @@ class Agency:
             return "", "", ""
         name_in_hex = json.loads(metaData[0].to_json())['hex']
         name = bytes.fromhex(name_in_hex).decode('utf-8')
+        if 'Pro Crypto' in name:
+            name = 'ProCrypto 🌍 Distributed Staking'
         website_in_hex = json.loads(metaData[1].to_json())['hex']
         website = bytes.fromhex(website_in_hex).decode('utf-8')
         identity_in_hex = json.loads(metaData[2].to_json())['hex']
@@ -295,11 +297,11 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
                                         TS.topUp, TS.APR,
                                         TS.nodes['eligible']['online'],
                                         TS.nodes['eligible']['total'] - TS.nodes['eligible']['online'],
-                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['waiting']['online'],
                                         TS.nodes['waiting']['total'] - TS.nodes['waiting']['online'],
                                         TS.nodes['queued']['online'],
                                         TS.nodes['queued']['total'] - TS.nodes['queued']['online'],
+                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['jailed']['online'],
                                         TS.nodes['jailed']['total'] - TS.nodes['jailed']['online'],
                                         )
@@ -430,10 +432,7 @@ def change_agency(update: Update, context: CallbackContext):
         bot.edit_message_text(
             chat_id=query.message.chat_id,
             message_id=query.message.message_id,
-            text='Type @TrustStakingBot *agency_name* to set a new agency by default\n'
-                 'ex: \n'
-                 '    @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n'
-                 '    Select the one that you want from the list.',
+            text=choose_agency,
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([

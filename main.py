@@ -1,10 +1,12 @@
+import time
 from telegram import *
 from telegram.ext import *
 
 from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
-    update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts
+    update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts, \
+    AllAgencies
 from redelegation_period import redelegation_period, send_result
-from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, change
+from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe
 from utils import *
 from database import telegramDb
 from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator
@@ -26,7 +28,6 @@ reply_buttons = InlineKeyboardMarkup([
 ])
 
 
-
 def start(update: Update, context: CallbackContext):
     user_id = update.effective_chat['id']
     print("start called by: ", user_id)
@@ -43,7 +44,7 @@ def start(update: Update, context: CallbackContext):
     background_thread.start()
 
     update.message.reply_text(
-        text=emoji.cat + 'Main menu\n',
+        text=main_menu_message,
         reply_markup=reply_buttons,
     )
     return MainMenu
@@ -59,39 +60,91 @@ def main_menu(update: Update, context: CallbackContext):
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
-        text=emoji.cat + 'Main menu\n',
+        text=main_menu_message,
         reply_markup=reply_buttons,
     )
     return MainMenu
 
-oldAvailable = 0.0
+
+old_available_values = {}
+messages_to_be_deleted = {}
+bot = None
+r = 10
+def delete_spam(user, agency):
+    global messages_to_be_deleted
+    global bot
+    for message, chat in messages_to_be_deleted[user][agency][1:]:
+        bot.deleteMessage(chat, message)
+    messages_to_be_deleted[user][agency] = []
+
+
 def telegram_bot_sendtext(job):
     print('telegram_bot_sendtext called')
     subscription = job.job.context
+    background_thread = Thread(target=send_notification, args=(subscription,))
+    background_thread.start()
+
+
+
+def send_notification(subscription):
+    print("send_notification called")
     global oldAvailable
-    TS = Agency()
+    global r
     subscribed_users = telegramDb.get_subscribed_users(subscription)
-    newAvailable = TS.maxDelegationCap - TS.totalActiveStake
-    if newAvailable != oldAvailable:
-        print("\tOld Available: ", oldAvailable)
-        oldAvailable = newAvailable
-        print("\tAvailable: ", newAvailable)
-        background_thread = Thread(target=check_and_notify, args=(subscribed_users, newAvailable))
-        background_thread.start()
-
-
-def check_and_notify(subscribed_users, newAvailable):
-    print('\tcheck_and_notify called')
     for user in subscribed_users:
-        if newAvailable >= user['availableSpace']:
-            bot_message = emoji.attention + " {:.2f}".format(newAvailable) + " eGLD available to be staked."
-            send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                        + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
-            response = requests.get(send_text)
+        if user['_id'] != 1190803139:
+            continue
+        for agency in user['availableSpace']:
+            TS = AllAgencies[agency]
+            if TS.maxDelegationCap == 'unlimited':
+                newAvailable = TS.maxDelegationCap
+            else:
+                newAvailable = TS.maxDelegationCap - TS.totalActiveStake
+            if not agency in old_available_values:
+                old_available_values[agency] = 0
+            if newAvailable != old_available_values[agency]:
+                check_and_notify(user['_id'], newAvailable, old_available_values[agency], TS.name)
+                old_available_values[agency] = newAvailable
+
+
+def check_and_notify(user_id, newAvailable, oldAvailable, name):
+    print('\tcheck_and_notify called')
+    global messages_to_be_deleted
+    if newAvailable == 'unlimited' or newAvailable >= 1:
+        bot_message = emoji.attention
+        if isinstance(newAvailable, float):
+            bot_message += " {:.2f}".format(newAvailable)
+        else:
+            bot_message += newAvailable
+        bot_message += " eGLD available to be staked for {}".format(name)
+
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                    + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
+        response = requests.get(send_text)
+        data = response.json()
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
+        time.sleep(0.1)
+        if user_id not in messages_to_be_deleted.keys():
+            messages_to_be_deleted[user_id] = {}
+        if name not in messages_to_be_deleted[user_id].keys():
+            messages_to_be_deleted[user_id][name] = []
+        messages_to_be_deleted[user_id][name].append([message_id, chat_id])
+    elif oldAvailable == 'unlimited' or oldAvailable >= 1:
+        bot_message = '{} is full again!'.format(name) + emoji.sad_face
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                    + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
+        response = requests.get(send_text)
+        delete_spam(user_id, name)
+        time.sleep(0.1)
+
 
 def main():
     updater = Updater(bot_token)
     dp = updater.dispatcher
+    global bot
+    bot = dp.bot
+
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
@@ -138,15 +191,15 @@ def main():
             ],
             SubscriptionsMenu: [
                 CallbackQueryHandler(callback_subscription, pattern='availableSpace$'),
-                CallbackQueryHandler(unsubscribe, pattern='.*_unsubscribe'),
-                CallbackQueryHandler(change, pattern='.*_change'),
-                CallbackQueryHandler(subscriptions, pattern='back$'),
                 CallbackQueryHandler(main_menu, pattern='back_main_menu'),
 
             ],
             availableSpace: [
+                CallbackQueryHandler(subscribe, pattern='new_agency'),
+                CallbackQueryHandler(unsubscribe, pattern='.*_unsubscribe$'),
                 MessageHandler(Filters.text & ~Filters.command, subscribeAvailableSpace),
-                CallbackQueryHandler(subscriptions, pattern='back'),
+                CallbackQueryHandler(callback_subscription, pattern='availableSpace$'),  # back
+                CallbackQueryHandler(main_menu, pattern='back_main_menu'),
             ]
         },
         fallbacks=[CommandHandler('start', start)])
@@ -157,8 +210,8 @@ def main():
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, show_agency))
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
-    updater.job_queue.run_repeating(update_agencies_info, 600, context="update_agencies_info",)
-    updater.job_queue.run_repeating(update_price, 120, context="price_update",)
+    updater.job_queue.run_repeating(update_agencies_info, 600, context="update_agencies_info", )
+    updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
     background_thread = Thread(target=get_all_contracts)
     background_thread.start()

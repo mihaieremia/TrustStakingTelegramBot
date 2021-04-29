@@ -1,3 +1,4 @@
+import re
 info = u'\U00002139'
 back = u'\U00002B05'
 attention = u'\U0000203C'
@@ -24,3 +25,12 @@ bookmark = u'\U0001F516'
 sparkles = u'\U00002728'
 anticlockwise = u'\U0001F504'
 pocket_calculator = u'\U0001F5A9'
+sad_face = u'\U0001F613'
+
+
+emoji_pattern = re.compile("["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+        u"\U0001F680-\U0001F6FF"  # transport & map symbols
+        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                           "]+", flags=re.UNICODE)
