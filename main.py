@@ -44,7 +44,7 @@ def start(update: Update, context: CallbackContext):
     background_thread.start()
 
     update.message.reply_text(
-        text=emoji.cat + 'Main menu\n',
+        text=main_menu_message,
         reply_markup=reply_buttons,
     )
     return MainMenu
@@ -60,7 +60,7 @@ def main_menu(update: Update, context: CallbackContext):
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
-        text=emoji.cat + 'Main menu\n',
+        text=main_menu_message,
         reply_markup=reply_buttons,
     )
     return MainMenu
