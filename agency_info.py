@@ -297,11 +297,11 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
                                         TS.topUp, TS.APR,
                                         TS.nodes['eligible']['online'],
                                         TS.nodes['eligible']['total'] - TS.nodes['eligible']['online'],
-                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['waiting']['online'],
                                         TS.nodes['waiting']['total'] - TS.nodes['waiting']['online'],
                                         TS.nodes['queued']['online'],
                                         TS.nodes['queued']['total'] - TS.nodes['queued']['online'],
+                                        TS.nodes['new']['online'], TS.nodes['new']['total'] - TS.nodes['new']['online'],
                                         TS.nodes['jailed']['online'],
                                         TS.nodes['jailed']['total'] - TS.nodes['jailed']['online'],
                                         )

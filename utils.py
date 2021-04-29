@@ -15,6 +15,8 @@ default_agency = 'trust staking'
 db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority'
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 
+main_menu_message = emoji.cat + '''Main menu\n'''
+
 agency_info = '''
 <code>Agency: </code><a href="{}">{}</a>
 <code>Contract Address: </code>{}
@@ -30,11 +32,11 @@ agency_info = '''
 '''
 
 extra = '''
-<code>Eligible:</code> {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Waiting:</code>     {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Queued:</code>     {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>New:</code>             {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
-<code>Jailed:</code>       {} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Eligible:</code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Waiting: </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Queued:   </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>New:      </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
+<code>Jailed:   </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
 '''
 
 wallet_information = '''
