@@ -52,8 +52,8 @@ class Database:
     def get_user(self, user_id):
         return self.users.find_one({"_id": user_id})
 
-    def get_subscribed_users(self, subscription):
-        return self.users.find({subscription: {"$not": {"$size": 0}}})
+    def get_subscribed_users(self, subscription, agency):
+        return self.users.find({subscription: {"$in": [agency]}})
 
     def subscribe(self, user_id, subscription, agency):
         self.users.update_one({"_id": user_id}, {"$push": {subscription: agency}})
