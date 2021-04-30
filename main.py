@@ -1,4 +1,6 @@
+import threading
 import time
+
 from telegram import *
 from telegram.ext import *
 
@@ -69,11 +71,13 @@ def main_menu(update: Update, context: CallbackContext):
 old_available_values = {}
 messages_to_be_deleted = {}
 bot = None
-r = 10
+
 def delete_spam(user, agency):
     global messages_to_be_deleted
     global bot
-    if len(messages_to_be_deleted[user][agency]) < 2:
+    if user not in messages_to_be_deleted and \
+        agency not in messages_to_be_deleted[user] and \
+        len(messages_to_be_deleted[user][agency]) < 2:
         return
     for message, chat in messages_to_be_deleted[user][agency][1:]:
         bot.deleteMessage(chat, message)
@@ -83,32 +87,37 @@ def delete_spam(user, agency):
 def telegram_bot_sendtext(job):
     print('telegram_bot_sendtext called')
     subscription = job.job.context
-    background_thread = Thread(target=send_notification, args=(subscription,))
-    background_thread.start()
+    global AllAgencies
+    for agency in AllAgencies:
+        TS = AllAgencies[agency]
+        if TS.maxDelegationCap == 'unlimited':
+            newAvailable = TS.maxDelegationCap
+        else:
+            newAvailable = TS.maxDelegationCap - TS.totalActiveStake
+        if newAvailable == 'unlimited' or newAvailable >= 1:
+            background_thread = Thread(target=send_notification, args=(subscription, newAvailable, agency, TS.name))
+            background_thread.start()
+            print('\t sending notification for agency:', TS.name, 'free space: ', newAvailable, 'eGLD')
 
 
 
-def send_notification(subscription):
+def send_notification(subscription, newAvailable, agency, agency_name):
     print("send_notification called")
     global oldAvailable
-    global r
-    subscribed_users = telegramDb.get_subscribed_users(subscription)
+    global AllAgencies
+
     requests = 0
     bad_requests = 0
-    for user in subscribed_users:
-        for agency in user['availableSpace']:
-            TS = AllAgencies[agency]
-            if TS.maxDelegationCap == 'unlimited':
-                newAvailable = TS.maxDelegationCap
-            else:
-                newAvailable = TS.maxDelegationCap - TS.totalActiveStake
-            if not agency in old_available_values:
-                old_available_values[agency] = 0
-            if newAvailable != old_available_values[agency]:
-                requests += 1
-                bad_requests += check_and_notify(user['_id'], newAvailable, old_available_values[agency], TS.name)
-                old_available_values[agency] = newAvailable
-    print("\tbad requests", str(bad_requests) + "/" + str(requests))
+
+    if not agency in old_available_values:
+        old_available_values[agency] = 0
+    if newAvailable != old_available_values[agency]:
+        subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
+        for user in subscribed_users:
+            requests += 1
+            bad_requests += check_and_notify(user['_id'], newAvailable, old_available_values[agency], agency_name)
+            old_available_values[agency] = newAvailable
+        print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
 
 
 def check_and_notify(user_id, newAvailable, oldAvailable, name):

@@ -104,7 +104,7 @@ class Agency:
         try:
             resp = requests.get(url, params)
             data = resp.json()
-            print(f'\t__node_status reply: {data}')
+            #print(f'\t__node_status reply: {data}')
             for node in data:
                 self.nodes[node['status']]['total'] += 1
                 if isinstance(node, dict) and 'online' in node.keys() and node['online']:
