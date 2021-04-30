@@ -92,7 +92,7 @@ def get_current_price():
     try:
         resp = requests.get(url)
         data = resp.json()
-        print(f'\tget_current_price reply: {data}')
+        print(f'\tget_current_price reply: {data[-1]}')
         return data[-1]['value']
     except KeyError as e:
         print("\tKeyError: %s" % str(e))

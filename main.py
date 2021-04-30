@@ -6,7 +6,7 @@ from telegram.ext import *
 
 from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
     update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts, \
-    AllAgencies
+    AllAgencies, update_agency
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe
 from utils import *
@@ -94,15 +94,16 @@ def telegram_bot_sendtext(job):
             newAvailable = TS.maxDelegationCap
         else:
             newAvailable = TS.maxDelegationCap - TS.totalActiveStake
-        if newAvailable == 'unlimited' or newAvailable >= 1:
+        if newAvailable == 'unlimited' or newAvailable >= 1 \
+            or (agency in old_available_values
+                and (old_available_values[agency] == 'unlimited'
+                     or old_available_values[agency] >= 1)):
             background_thread = Thread(target=send_notification, args=(subscription, newAvailable, agency, TS.name))
             background_thread.start()
-            print('\t sending notification for agency:', TS.name, 'free space: ', newAvailable, 'eGLD')
 
 
 
 def send_notification(subscription, newAvailable, agency, agency_name):
-    print("send_notification called")
     global oldAvailable
     global AllAgencies
 
@@ -117,7 +118,12 @@ def send_notification(subscription, newAvailable, agency, agency_name):
             requests += 1
             bad_requests += check_and_notify(user['_id'], newAvailable, old_available_values[agency], agency_name)
             old_available_values[agency] = newAvailable
-        print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
+        if requests >= 1:
+            print('\t\t notifications sent for agency:', agency_name, 'free space: ', newAvailable, 'eGLD')
+            print('\t\t force update agency:', agency_name)
+            updating = Thread(target=update_agency, args=(list(AllAgencies.keys()).index(agency),))
+            updating.start()
+            print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
 
 
 def check_and_notify(user_id, newAvailable, oldAvailable, name):
@@ -168,7 +174,7 @@ def main():
     dp = updater.dispatcher
     global bot
     bot = dp.bot
-
+    get_all_contracts()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
@@ -234,11 +240,9 @@ def main():
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, show_agency))
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
-    updater.job_queue.run_repeating(update_agencies_info, 600, context="update_agencies_info", )
+    updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
-    background_thread = Thread(target=get_all_contracts)
-    background_thread.start()
 
     updater.idle()
 

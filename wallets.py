@@ -33,12 +33,6 @@ def get_keyboard(user_id, user_wallets):
 def update_wallets(user_id, user_wallets):
     print("update_wallets called")
     global AllAgencies
-    if len(AllAgencies.keys()) < 43:
-        for i in range(30):
-            if len(AllAgencies.keys()) >= 43:
-                break
-            print("\tsleeping")
-            time.sleep(0.01)
     for wallet in user_wallets:
         print("\t wallet updating: ", wallet)
         now = datetime.now()

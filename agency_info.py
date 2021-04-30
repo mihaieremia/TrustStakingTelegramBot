@@ -182,6 +182,33 @@ def get_all_contracts():
 
 AllAgencies = {}
 Agencies_results = []
+no_agency_to_be_updated = 0
+
+def update_agency(agency_to_be_updated):
+    global no_agency_to_be_updated
+    reply = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqylllslmq6y6').query(mainnet_proxy,
+                                                                                                  'getAllContractAddresses',
+                                                                                                [])
+    if agency_to_be_updated is None:
+        address = reply[no_agency_to_be_updated]
+        if no_agency_to_be_updated + 1 < len(reply):
+            no_agency_to_be_updated += 1
+        else:
+            no_agency_to_be_updated = 0
+    else:
+        address = reply[agency_to_be_updated]
+
+    hex_address = json.loads(address.to_json())['hex']
+    contract = Address(hex_address).bech32()
+    agency = Agency(contract=SmartContract(contract))
+    if agency.name != '':
+        if agency.name.lower() not in AllAgencies.keys():
+            Agencies_results.append(InlineQueryResultArticle(id=str(uuid4()),
+                                                             title=agency.name,
+                                                             input_message_content=InputTextMessageContent(
+                                                                 agency.name.lower())))
+        AllAgencies[agency.name.lower()] = agency
+    print(agency.name, "updated!")
 
 def get_user_staking_agencies(addr):
     print('get_user_staking_agencies called')
@@ -200,8 +227,7 @@ def get_user_staking_agencies(addr):
         return []
 
 def update_agencies_info(job):
-    print("update_agencies_info called")
-    background_thread = Thread(target=get_all_contracts)
+    background_thread = Thread(target=update_agency, args=(None,))
     background_thread.start()
 
 
