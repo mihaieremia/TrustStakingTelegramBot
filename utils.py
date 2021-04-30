@@ -13,7 +13,7 @@ mainnet_proxy = ElrondProxy('https://gateway.elrond.com')
 TrustStaking_contract = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl')
 default_agency = 'trust staking'
 db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority'
-bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
+bot_token = '1724076081:AAFhcHoFcmT8tNl90Gge7mbYZn-1cunu7j4'
 
 main_menu_message = emoji.cat + '''Main menu\n'''
 
