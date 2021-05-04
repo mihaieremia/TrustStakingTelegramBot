@@ -52,6 +52,9 @@ def send_result(update: Update, context):
     global AllAgencies
     user_id = update.effective_chat['id']
     user_agency = telegramDb.get_user_agency(user_id)['name']
+    if user_agency not in AllAgencies:
+        telegramDb.set_user_agency(user_id, default_agency)
+        user_agency = telegramDb.get_user_agency(user_id)['name']
     TS = AllAgencies[user_agency]
     if TS.APR == 0:
         for i in range(30):
