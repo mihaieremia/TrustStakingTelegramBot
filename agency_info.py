@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 from datetime import datetime, timedelta
 from threading import Thread
@@ -39,16 +40,6 @@ class Agency:
             self.get_extra_info()
 
     def get_extra_info(self):
-        self.nodes = {
-            'eligible': {'online': 0, 'total': 0},
-            'waiting': {'online': 0, 'total': 0},
-            'new': {'online': 0, 'total': 0},
-            'queued': {'online': 0, 'total': 0},
-            'jailed': {'online': 0, 'total': 0},
-            'total': {'active': 0, 'staked': 0}
-        }
-        self.APR = 0
-        self.topUp = 0
         if self.__node_status():
             print("\tNodes status read.")
             if self.__info():
@@ -95,6 +86,14 @@ class Agency:
         return maxDelegationCap, delegationCap
 
     def __node_status(self):
+        nodes = {
+            'eligible': {'online': 0, 'total': 0},
+            'waiting': {'online': 0, 'total': 0},
+            'new': {'online': 0, 'total': 0},
+            'queued': {'online': 0, 'total': 0},
+            'jailed': {'online': 0, 'total': 0},
+            'total': {'active': 0, 'staked': 0}
+        }
         print("__node_status called")
         url = 'https://api.elrond.com/nodes'
         params = {'provider': self.contract.address,
@@ -106,12 +105,12 @@ class Agency:
             data = resp.json()
             #print(f'\t__node_status reply: {data}')
             for node in data:
-                self.nodes[node['status']]['total'] += 1
+                nodes[node['status']]['total'] += 1
                 if isinstance(node, dict) and 'online' in node.keys() and node['online']:
-                    self.nodes[node['status']]['online'] += 1
-            self.nodes['total']['staked'] = self.nodes['queued']['total'] + self.nodes['jailed']['total']
-            self.nodes['total']['active'] = self.nodes['eligible']['total'] + self.nodes['waiting']['total'] + \
-                                            self.nodes['new']['total']
+                    nodes[node['status']]['online'] += 1
+            nodes['total']['staked'] = nodes['queued']['total'] + nodes['jailed']['total']
+            nodes['total']['active'] = nodes['eligible']['total'] + nodes['waiting']['total'] + nodes['new']['total']
+            self.nodes = nodes
             return True
         except KeyError as e:
             print("\tKeyError: %s" % str(e))
@@ -157,10 +156,10 @@ class Agency:
 
         return active, claimable, totalRewards
 
-
 def get_all_contracts():
     global AllAgencies
     global Agencies_results
+    global AgenciesLastUpdate
     print("get_all_contracts called")
     reply = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqylllslmq6y6').query(mainnet_proxy,
                                                                                                   'getAllContractAddresses',
@@ -181,11 +180,14 @@ def get_all_contracts():
 
 
 AllAgencies = {}
+AgenciesLastUpdate = {}
 Agencies_results = []
 no_agency_to_be_updated = 0
 
 def update_agency(agency_to_be_updated):
     global no_agency_to_be_updated
+    global AllAgencies
+    global AgenciesLastUpdate
     reply = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqylllslmq6y6').query(mainnet_proxy,
                                                                                                   'getAllContractAddresses',
                                                                                                 [])
@@ -232,12 +234,19 @@ def update_agencies_info(job):
 
 
 def update_user_agency(user_id):
+    global AllAgencies
+    global AgenciesLastUpdate
     print("update_user_agency called")
     user_agency = telegramDb.get_user_agency(user_id)
+    if user_agency['name'] not in AllAgencies:
+        telegramDb.set_user_agency(user_id, default_agency)
+        user_agency = telegramDb.get_user_agency(user_id)
     now = datetime.now()
-    if now - user_agency['last_update'] > timedelta(seconds=30):
+    if user_agency['name'] not in AgenciesLastUpdate \
+        or now - AgenciesLastUpdate[user_agency['name']] > timedelta(seconds=30):
         print("\t updating current agency = ", user_agency['name'])
         AllAgencies[user_agency['name']].get_extra_info()
+        AgenciesLastUpdate[user_agency['name']] = now
 
 
 def agency_info_handle(update: Update, context: CallbackContext):
@@ -246,6 +255,9 @@ def agency_info_handle(update: Update, context: CallbackContext):
     bot = context.bot
     user_id = query.from_user.id
     user_agency = telegramDb.get_user_agency(user_id)['name']
+    if user_agency not in AllAgencies:
+        telegramDb.set_user_agency(user_id, default_agency)
+        user_agency = telegramDb.get_user_agency(user_id)['name']
     TS = AllAgencies[user_agency]
     if TS.APR == 0:
         for i in range(30):
@@ -295,6 +307,9 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
     bot = context.bot
     user_id = query.from_user.id
     user_agency = telegramDb.get_user_agency(user_id)['name']
+    if user_agency not in AllAgencies:
+        telegramDb.set_user_agency(user_id, default_agency)
+        user_agency = telegramDb.get_user_agency(user_id)['name']
     TS = AllAgencies[user_agency]
     if TS.APR == 0:
         for i in range(30):
@@ -415,8 +430,8 @@ def change_agency(update: Update, context: CallbackContext):
             user_id = update.effective_chat['id']
 
             telegramDb.set_user_agency(user_id, agency)
+            update_user_agency(user_id)
             TS = AllAgencies[agency]
-            TS.get_extra_info()
 
             if isinstance(TS.maxDelegationCap, str):
                 available_string = emoji.checkmark
