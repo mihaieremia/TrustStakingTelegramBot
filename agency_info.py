@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 from datetime import datetime, timedelta
 from threading import Thread
@@ -39,16 +40,6 @@ class Agency:
             self.get_extra_info()
 
     def get_extra_info(self):
-        self.nodes = {
-            'eligible': {'online': 0, 'total': 0},
-            'waiting': {'online': 0, 'total': 0},
-            'new': {'online': 0, 'total': 0},
-            'queued': {'online': 0, 'total': 0},
-            'jailed': {'online': 0, 'total': 0},
-            'total': {'active': 0, 'staked': 0}
-        }
-        self.APR = 0
-        self.topUp = 0
         if self.__node_status():
             print("\tNodes status read.")
             if self.__info():
@@ -95,6 +86,14 @@ class Agency:
         return maxDelegationCap, delegationCap
 
     def __node_status(self):
+        nodes = {
+            'eligible': {'online': 0, 'total': 0},
+            'waiting': {'online': 0, 'total': 0},
+            'new': {'online': 0, 'total': 0},
+            'queued': {'online': 0, 'total': 0},
+            'jailed': {'online': 0, 'total': 0},
+            'total': {'active': 0, 'staked': 0}
+        }
         print("__node_status called")
         url = 'https://api.elrond.com/nodes'
         params = {'provider': self.contract.address,
@@ -106,12 +105,12 @@ class Agency:
             data = resp.json()
             #print(f'\t__node_status reply: {data}')
             for node in data:
-                self.nodes[node['status']]['total'] += 1
+                nodes[node['status']]['total'] += 1
                 if isinstance(node, dict) and 'online' in node.keys() and node['online']:
-                    self.nodes[node['status']]['online'] += 1
-            self.nodes['total']['staked'] = self.nodes['queued']['total'] + self.nodes['jailed']['total']
-            self.nodes['total']['active'] = self.nodes['eligible']['total'] + self.nodes['waiting']['total'] + \
-                                            self.nodes['new']['total']
+                    nodes[node['status']]['online'] += 1
+            nodes['total']['staked'] = nodes['queued']['total'] + nodes['jailed']['total']
+            nodes['total']['active'] = nodes['eligible']['total'] + nodes['waiting']['total'] + nodes['new']['total']
+            self.nodes = nodes
             return True
         except KeyError as e:
             print("\tKeyError: %s" % str(e))
@@ -227,8 +226,12 @@ def get_user_staking_agencies(addr):
         return []
 
 def update_agencies_info(job):
-    background_thread = Thread(target=update_agency, args=(None,))
-    background_thread.start()
+    no_threads = threading.active_count()
+    if no_threads < 4:
+        background_thread = Thread(target=update_agency, args=(None,))
+        background_thread.start()
+    else:
+        print("too many threads, waiting for:", no_threads)
 
 
 def update_user_agency(user_id):
