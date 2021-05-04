@@ -114,6 +114,9 @@ def callback_subscription(update, context):
     agencies = telegramDb.get_agency_subscribed(user_id, subscription)
 
     for agency in agencies:
+        if agency not in AllAgencies:
+            telegramDb.unsubscribe(user_id, subscription, agency)
+            continue
         keyboard.inline_keyboard.insert(0,
             [
                 InlineKeyboardButton(AllAgencies[agency].name,
