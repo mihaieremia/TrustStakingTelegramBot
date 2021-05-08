@@ -169,13 +169,86 @@ def check_and_notify(user_id, newAvailable, oldAvailable, name):
     return 1
 
 
+def send_antiscam(job):
+    file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
+                "CAACAgQAAxkBAAIhXWCW8InPkPkkxqhJXfzaFe8EkHEfAAJdCAACM6thUAGqayRCrbszHwQ",
+                "CAACAgQAAxkBAAIhW2CW8IX16Jlt-doUqHzuLfDGuOKLAAISAAMu8zoSeb51JZauMoIfBA"
+                ]
+    for file_id in file_ids:
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendSticker?chat_id=' \
+                    + str(-1001370506176) + '&sticker=' + file_id
+        response = requests.get(send_text)
+        time.sleep(0.01)
+
+    message = '''
+    ⚠️⚠️⚠️ SECURITY ALERT ⚠️⚠️⚠️
+
+    - Elrond admins will never give you the first private message!
+
+    "Elrond's admins will never call you first!"
+
+    - Elrond admins will not send you an EGLD / ETH / BTC address by Telegram / Email!
+
+    - Elrond Official, Elrond Official Support and other names like SCAM, any questions are solved on the official groups!
+
+    - Please beware of scammers and do not trust anyone who asks you for $eGLD, staking space, passwords or the 24 words!
+
+    -There will never be a need for a representative of the Elrond team or an admin to approach you personally.
+
+    If you are unsure of something, ask.
+
+    Report the scams to @notoscam & join @ElrondScambusters
+
+    Stay alert!
+    '''
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(-1001370506176) + '&parse_mode=Markdown&text=' + message
+    response = requests.get(send_text)
+
+
+def send_antiscamRO(job):
+    print('send_antiscamRO called')
+    file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
+                "CAACAgQAAxkBAAIhXWCW8InPkPkkxqhJXfzaFe8EkHEfAAJdCAACM6thUAGqayRCrbszHwQ",
+                "CAACAgQAAxkBAAIhW2CW8IX16Jlt-doUqHzuLfDGuOKLAAISAAMu8zoSeb51JZauMoIfBA"
+                ]
+    for file_id in file_ids:
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendSticker?chat_id=' \
+                    + str(-1001416314327) + '&sticker=' + file_id
+        response = requests.get(send_text)
+        print('\t', response.status_code)
+        time.sleep(0.01)
+    message = '''
+    \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f ALERTA DE SECURITATE \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f
+    
+    - Adminii Elrond nu v\u0103 vor da niciodata primii mesaj privat!
+    
+    - Adminii Elrond nu v\u0103 vor suna niciodata primii!
+    
+    - Adminii Elrond nu v\u0103 vor trimite o adresa de EGLD/ETH/BTC prin Telegram/Email!
+    
+    - Elrond Official, Elrond Official Support si alte denumiri de genul sunt SCAM, orice nelamurire se rezolva pe grupurile oficiale!
+    
+    - Va rog sa fi\u021bi atenti la \u00een\u0219el\u0103torii \u0219i s\u0103 nu ave\u021bi incredere in nimeni care v\u0103 cere $EGLD, loc la staking, parole sau cele 24 de cuvinte!
+    
+    -Nu va exista vreodata nevoia ca un reprezentant al echipei Elrond sau un admin sa va abordeze personal.
+    
+    Daca sunteti nesiguri de ceva intrebati. 
+    
+    Raportati scamurile la @notoscam & alaturati-va pe @ElrondScambusters
+    
+    - R\u0103m\u00e2ne\u021bi vigilen\u021bi!
+    '''
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(-1001416314327) + '&parse_mode=Markdown&text=' + message
+    response = requests.get(send_text)
+
 def main():
     updater = Updater(bot_token)
     dp = updater.dispatcher
     global bot
     bot = dp.bot
     get_all_contracts()
-
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -241,6 +314,8 @@ def main():
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
+    updater.job_queue.run_repeating(send_antiscam, 1800, context="send_antiscam")
+    updater.job_queue.run_repeating(send_antiscamRO, 1800, context="send_antiscamRO")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
 
