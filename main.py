@@ -168,6 +168,13 @@ def check_and_notify(user_id, newAvailable, oldAvailable, name):
         return 0
     return 1
 
+antispam_to_delete = []
+
+def delete_antiscam():
+    global bot
+    global antispam_to_delete
+    for message, chat in antispam_to_delete:
+        bot.deleteMessage(chat, message)
 
 def send_antiscam(job):
     file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
@@ -179,6 +186,10 @@ def send_antiscam(job):
                     + str(-1001370506176) + '&sticker=' + file_id
         response = requests.get(send_text)
         time.sleep(0.01)
+        data = response.json()
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
+        antispam_to_delete.append((message_id, chat_id))
 
     message = '''
     ⚠️⚠️⚠️ SECURITY ALERT ⚠️⚠️⚠️
@@ -204,9 +215,14 @@ def send_antiscam(job):
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                 + str(-1001370506176) + '&parse_mode=Markdown&text=' + message
     response = requests.get(send_text)
-
+    data = response.json()
+    message_id = data['result']['message_id']
+    chat_id = data['result']['chat']['id']
+    antispam_to_delete.append((message_id, chat_id))
+    delete_antiscam()
 
 def send_antiscamRO(job):
+    global antispam_to_delete
     print('send_antiscamRO called')
     file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
                 "CAACAgQAAxkBAAIhXWCW8InPkPkkxqhJXfzaFe8EkHEfAAJdCAACM6thUAGqayRCrbszHwQ",
@@ -217,6 +233,10 @@ def send_antiscamRO(job):
                     + str(-1001416314327) + '&sticker=' + file_id
         response = requests.get(send_text)
         print('\t', response.status_code)
+        data = response.json()
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
+        antispam_to_delete.append((message_id, chat_id))
         time.sleep(0.01)
     message = '''
     \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f ALERTA DE SECURITATE \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f
