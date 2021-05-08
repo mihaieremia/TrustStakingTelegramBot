@@ -169,7 +169,25 @@ def check_and_notify(user_id, newAvailable, oldAvailable, name):
     return 1
 
 
+antispam_to_delete = []
+
+
+def delete_antiscam():
+    global bot
+    global antispam_to_delete
+    for message, chat in antispam_to_delete:
+        bot.deleteMessage(chat, message)
+        time.sleep(0.1)
+    antispam_to_delete = []
+
+def antiscam(job):
+    delete_antiscam()
+    send_antiscam(job)
+    send_antiscamRO(job)
+
+
 def send_antiscam(job):
+    global antispam_to_delete
     file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
                 "CAACAgQAAxkBAAIhXWCW8InPkPkkxqhJXfzaFe8EkHEfAAJdCAACM6thUAGqayRCrbszHwQ",
                 "CAACAgQAAxkBAAIhW2CW8IX16Jlt-doUqHzuLfDGuOKLAAISAAMu8zoSeb51JZauMoIfBA"
@@ -179,6 +197,10 @@ def send_antiscam(job):
                     + str(-1001370506176) + '&sticker=' + file_id
         response = requests.get(send_text)
         time.sleep(0.01)
+        data = response.json()
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
+        antispam_to_delete.append((message_id, chat_id))
 
     message = '''
     ⚠️⚠️⚠️ SECURITY ALERT ⚠️⚠️⚠️
@@ -204,9 +226,13 @@ def send_antiscam(job):
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                 + str(-1001370506176) + '&parse_mode=Markdown&text=' + message
     response = requests.get(send_text)
-
+    data = response.json()
+    message_id = data['result']['message_id']
+    chat_id = data['result']['chat']['id']
+    antispam_to_delete.append((message_id, chat_id))
 
 def send_antiscamRO(job):
+    global antispam_to_delete
     print('send_antiscamRO called')
     file_ids = ["CAACAgQAAxkBAAIhXGCW8IfTuyru08JKCdbPjJWnnmBIAAIUAAMu8zoS0u3oU_aQqIMfBA",
                 "CAACAgQAAxkBAAIhXWCW8InPkPkkxqhJXfzaFe8EkHEfAAJdCAACM6thUAGqayRCrbszHwQ",
@@ -217,6 +243,10 @@ def send_antiscamRO(job):
                     + str(-1001416314327) + '&sticker=' + file_id
         response = requests.get(send_text)
         print('\t', response.status_code)
+        data = response.json()
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
+        antispam_to_delete.append((message_id, chat_id))
         time.sleep(0.01)
     message = '''
     \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f ALERTA DE SECURITATE \u26a0\ufe0f\u26a0\ufe0f\u26a0\ufe0f
@@ -242,6 +272,12 @@ def send_antiscamRO(job):
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                 + str(-1001416314327) + '&parse_mode=Markdown&text=' + message
     response = requests.get(send_text)
+    data = response.json()
+    message_id = data['result']['message_id']
+    chat_id = data['result']['chat']['id']
+    antispam_to_delete.append((message_id, chat_id))
+    print('RO:', antispam_to_delete)
+
 
 def main():
     updater = Updater(bot_token)
@@ -314,8 +350,7 @@ def main():
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
-    updater.job_queue.run_repeating(send_antiscam, 1800, context="send_antiscam")
-    updater.job_queue.run_repeating(send_antiscamRO, 1800, context="send_antiscamRO")
+    updater.job_queue.run_repeating(antiscam, 1800, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
 
