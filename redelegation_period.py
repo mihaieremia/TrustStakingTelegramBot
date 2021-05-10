@@ -69,31 +69,20 @@ def send_result(update: Update, context):
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(emoji.back + " Back", callback_data='back')]
     ])
+    text = ''
     try:
-
-        if not egld.isnumeric():
-            raise TypeError("NaN")
+        egld = float(egld)
+        if not egld > 0:
+            text = "Please enter a positive number:"
         else:
-            egld = float(egld)
-            if not egld > 0:
-                raise TypeError("Negative number")
-        best_i, best_amount = get_best_step(egld, TS.APR)
-        text = best_period.format(best_i, best_amount, TS.APR, TS.name)
-        update.message.reply_text(
-            text=text,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.HTML,
-        )
-    except TypeError("Negative number"):
-        update.message.reply_text(
-            text="Please enter a positive number:",
-            reply_markup=reply_markup
-        )
-    except TypeError("NaN"):
-        update.message.reply_text(
-            text="Please enter a number",
-            reply_markup=reply_markup
-        )
+            best_i, best_amount = get_best_step(egld, TS.APR)
+            text = best_period.format(best_i, best_amount, TS.APR, TS.name)
     except Exception as e:
+        text = "Please enter a number"
         print("\tError: %s" % str(e))
+    update.message.reply_text(
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.HTML,
+    )
     return RedelegationPerion
