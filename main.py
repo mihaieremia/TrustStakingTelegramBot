@@ -152,7 +152,7 @@ def check_and_notify(user_id, newAvailable, oldAvailable, name):
         if name not in messages_to_be_deleted[user_id].keys():
             messages_to_be_deleted[user_id][name] = []
         messages_to_be_deleted[user_id][name].append([message_id, chat_id])
-    elif oldAvailable == 'unlimited' or oldAvailable >= 1:
+    elif oldAvailable == 'unlimited' or (newAvailable < oldAvailable and oldAvailable >= 1):
         bot_message = '{} is full again!'.format(name) + emoji.sad_face
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                     + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
