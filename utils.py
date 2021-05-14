@@ -29,6 +29,7 @@ agency_info = '''
 <code>Available: </code>{}
 <code>Top-up per node: </code>{:.2f} eGLD
 <code>APR: </code>{}
+<code>Unstacked: </code>{:.2f} eGLD
 '''
 
 extra = '''

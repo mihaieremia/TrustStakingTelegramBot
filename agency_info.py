@@ -36,10 +36,12 @@ class Agency:
         }
         self.APR = 0
         self.topUp = 0
+        self.totalUnstaked = 0
         if extra_info:
             self.get_extra_info()
 
     def get_extra_info(self):
+        self.totalUnstaked = convert_number(self.query('getTotalUnStaked'))
         if self.__node_status():
             print("\tNodes status read.")
             if self.__info():
@@ -285,7 +287,7 @@ def agency_info_handle(update: Update, context: CallbackContext):
                                 TS.nodes['total']['active'], TS.nodes['total']['staked'],
                                 TS.nodes['eligible']['total'],
                                 TS.delegators, TS.totalActiveStake, available_string,
-                                TS.topUp, TS.APR),
+                                TS.topUp, TS.APR, TS.totalUnstaked),
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
@@ -335,7 +337,7 @@ def agency_info_handle_extra(update: Update, context: CallbackContext):
                                         TS.nodes['total']['active'], TS.nodes['total']['staked'],
                                         TS.nodes['eligible']['total'],
                                         TS.delegators, TS.totalActiveStake, available_string,
-                                        TS.topUp, TS.APR,
+                                        TS.topUp, TS.APR, TS.totalUnstaked,
                                         TS.nodes['eligible']['online'],
                                         TS.nodes['eligible']['total'] - TS.nodes['eligible']['online'],
                                         TS.nodes['waiting']['online'],
@@ -409,7 +411,7 @@ def show_agency(update: Update, context: CallbackContext):
                               TS.nodes['total']['active'], TS.nodes['total']['staked'],
                               TS.nodes['eligible']['total'],
                               TS.delegators, TS.totalActiveStake, available_string,
-                              TS.topUp, TS.APR)
+                              TS.topUp, TS.APR, TS.totalUnstaked)
     context.bot.send_message(
         chat_id=update.message.chat_id,
         text=text,
@@ -449,7 +451,7 @@ def change_agency(update: Update, context: CallbackContext):
                                       TS.nodes['total']['active'], TS.nodes['total']['staked'],
                                       TS.nodes['eligible']['total'],
                                       TS.delegators, TS.totalActiveStake, available_string,
-                                      TS.topUp, TS.APR)
+                                      TS.topUp, TS.APR, TS.totalUnstaked)
             context.bot.send_message(
                 chat_id=update.message.chat_id,
                 text=text,
