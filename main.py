@@ -11,7 +11,8 @@ from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe
 from utils import *
 from database import telegramDb
-from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator
+from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator, \
+    update_price
 from threading import Thread
 
 reply_buttons = InlineKeyboardMarkup([

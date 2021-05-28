@@ -175,6 +175,31 @@ def delete_wallet(update, context):
     return WalletStatus
 
 
+price = None
+
+def get_current_price():
+    print("get_current_price called")
+    url = 'https://data.elrond.com/market/quotes/egld/price'
+    try:
+        resp = requests.get(url)
+        data = resp.json()
+        print(f'\tget_current_price reply: {data[-1]}')
+        return data[-1]['value']
+    except KeyError as e:
+        print("\tKeyError: %s" % str(e))
+        return 0
+    except TypeError as e:
+        print("\tTypeError: %s" % str(e))
+        return 0
+    except Exception as e:
+        print("\tError: %s" % str(e))
+        return 0
+
+def update_price(job):
+    global price
+    price = get_current_price()
+
+
 def mex_calculator(update, context):
     print("mex_calculator called")
 
@@ -240,17 +265,22 @@ def wallet_info(update, context):
     if price is None:
         price = get_current_price()
     available = wallet['available']
-    text = wallet_information.format(wallet['address'], wallet['label'], wallet['address'][:10], wallet['address'][-6:],
-                                     available, available * price)
+    text = ''
+    total = available
     for agency in wallet['agencies'].keys():
         active = wallet['agencies'][agency]['active']
         claimable = wallet['agencies'][agency]['claimable']
         totalRewards = wallet['agencies'][agency]['totalRewards']
+        total += active + claimable
         text += wallet_for_agency_info.format(agency,
                                               active, active * price,
                                               claimable, claimable * price,
                                               totalRewards, totalRewards * price,
+                                              price
                                               )
+    text = wallet_information.format(wallet['address'], wallet['label'],
+                                     wallet['address'][:10], wallet['address'][-6:],
+                                     available, available * price, total, total * price) + text
     bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,

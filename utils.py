@@ -44,6 +44,7 @@ wallet_information = '''
 <code>Wallet:</code> <a href="https://explorer.elrond.com/accounts/{}">{}</a> - <code>{}...{}</code>
 
 <code>Available:</code> {} <code>eGLD</code> (${:.2f})
+<code>Total:</code> {} <code>eGLD</code> (${:.2f})
 
 '''
 wallet_for_agency_info = '''
@@ -52,6 +53,7 @@ wallet_for_agency_info = '''
 <code>Claimable:</code> {} <code>eGLD</code> (${:.2f})
 <code>Total rewards:</code> {} <code>eGLD</code> (${:.2f})
 
+*1eGLD = ${:.2f}
 '''
 
 mex_calculator_info = '''
@@ -87,23 +89,6 @@ ex: \n
 '''
 
 
-def get_current_price():
-    print("get_current_price called")
-    url = 'https://data.elrond.com/market/quotes/egld/price'
-    try:
-        resp = requests.get(url)
-        data = resp.json()
-        print(f'\tget_current_price reply: {data[-1]}')
-        return data[-1]['value']
-    except KeyError as e:
-        print("\tKeyError: %s" % str(e))
-        return 0
-    except TypeError as e:
-        print("\tTypeError: %s" % str(e))
-        return 0
-    except Exception as e:
-        print("\tError: %s" % str(e))
-        return 0
 
 
 def convert_number(number, decimals=2):
@@ -134,10 +119,3 @@ def get_active_balance(addr):
         print("\tError: %s" % str(e))
         return '-'
 
-
-price = None
-
-
-def update_price(job):
-    global price
-    price = get_current_price()
