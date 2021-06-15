@@ -11,7 +11,7 @@ import emoji
 
 mainnet_proxy = ElrondProxy('https://gateway.elrond.com')
 TrustStaking_contract = SmartContract('erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl')
-default_agency = 'trust staking (10% fees until phase 4)'
+default_agency = 'trust staking'
 db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.mongodb.net/telegramBot?retryWrites=true&w=majority'
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 

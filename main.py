@@ -80,8 +80,8 @@ def delete_spam(user, agency):
         agency not in messages_to_be_deleted[user] and \
         len(messages_to_be_deleted[user][agency]) < 2:
         return
-    for message, chat in messages_to_be_deleted[user][agency][1:]:
-        bot.deleteMessage(chat, message)
+    message, chat = messages_to_be_deleted[user][agency]
+    bot.deleteMessage(chat, message)
     messages_to_be_deleted[user][agency] = []
 
 
