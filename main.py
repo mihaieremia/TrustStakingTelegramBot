@@ -352,7 +352,7 @@ def main():
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
-    updater.job_queue.run_repeating(antiscam, 10800, first=3, context="antiscam")
+    updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
 
