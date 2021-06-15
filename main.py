@@ -150,9 +150,10 @@ def check_and_notify(user_id, newAvailable, oldAvailable, name):
         time.sleep(0.1)
         if user_id not in messages_to_be_deleted.keys():
             messages_to_be_deleted[user_id] = {}
-        if name not in messages_to_be_deleted[user_id].keys():
-            messages_to_be_deleted[user_id][name] = []
-        messages_to_be_deleted[user_id][name].append([message_id, chat_id])
+        if name in messages_to_be_deleted[user_id].keys():
+            delete_spam(user_id, name)
+        messages_to_be_deleted[user_id][name] = [message_id, chat_id]
+
     elif oldAvailable == 'unlimited' or (newAvailable < oldAvailable and oldAvailable >= 1):
         bot_message = '{} is full again!'.format(name) + emoji.sad_face
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
