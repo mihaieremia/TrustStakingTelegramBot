@@ -98,11 +98,10 @@ def telegram_bot_sendtext(job):
         #print("\tnew:", newAvailable, '=', TS.maxDelegationCap, '-', TS.totalActiveStake)
         if (agency in old_available_values
             and (old_available_values[agency] == 'unlimited' or old_available_values[agency] >= 1)
-            and abs(newAvailable - old_available_values[agency])) > 5 \
+            and abs(newAvailable - old_available_values[agency]) > 5) \
                 or newAvailable == 'unlimited' or newAvailable >= 1:
             background_thread = Thread(target=send_notification, args=(subscription, newAvailable, agency, TS.name))
             background_thread.start()
-
 
 
 def send_notification(subscription, newAvailable, agency, agency_name):
