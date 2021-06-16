@@ -95,8 +95,7 @@ def telegram_bot_sendtext(job):
             newAvailable = TS.maxDelegationCap
         else:
             newAvailable = TS.maxDelegationCap - TS.totalActiveStake
-
-        #print("\tnew:", newAvailable, '=', TS.maxDelegationCap, '-', TS.totalActiveStake)
+            
         if (agency in old_available_values
             and (old_available_values[agency] == 'unlimited' or old_available_values[agency] >= 1)) \
                 or newAvailable == 'unlimited' or newAvailable >= 1:
@@ -353,7 +352,7 @@ def main():
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
-    updater.job_queue.run_repeating(antiscam, 10800, first=3, context="antiscam")
+    updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     updater.start_polling()
 
