@@ -1,7 +1,7 @@
 import time
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ParseMode
-from agency_info import AllAgencies
+from agency_info import AllAgencies, update_agency
 from database import telegramDb
 from utils import *
 
@@ -57,12 +57,13 @@ def send_result(update: Update, context):
         user_agency = telegramDb.get_user_agency(user_id)['name']
     TS = AllAgencies[user_agency]
     if TS.APR == 0:
+        update_agency(list(AllAgencies.keys()).index(user_agency), extra_info=True)
         for i in range(30):
             TS = AllAgencies[user_agency]
             if TS.APR != 0:
                 break
             print("\tsleeping")
-            time.sleep(0.01)
+            time.sleep(0.1)
 
     egld = update.message.text
 

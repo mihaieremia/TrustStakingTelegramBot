@@ -1,5 +1,6 @@
 import threading
 import time
+from datetime import datetime
 
 from telegram import *
 from telegram.ext import *
@@ -281,7 +282,36 @@ def send_antiscamRO(job):
     antispam_to_delete.append((message_id, chat_id))
     print('RO:', antispam_to_delete)
 
+def send_new_epoch_status(job):
+    print("send_new_epoch_status called")
+    msg = ''
+    for agency in trust_agencies:
+        update_agency(list(AllAgencies.keys()).index(agency), extra_info=True)
+        reply = AllAgencies[agency].contract.query(mainnet_proxy, 'getContractConfig', [])
+        owner_address = Address(json.loads(reply[0].to_json())['hex']).bech32()
+        params = {'address': owner_address}
+        resp = requests.get('http://api.elrond.tax/rewardsHistory', params)
+        data = resp.json()
+        try:
+            last_apy = data['rewards_per_epoch'][AllAgencies[agency].contract.address.bech32()][0]
+        except Exception as e:
+            print("error:", e)
+            last_apy = {'epoch': '-', "APRDelegator": '0.00'}
+        msg += provider_daily_statistic.format(AllAgencies[agency].name,
+                                               last_apy['epoch'],
+                                               float(last_apy["APRDelegator"]),
+                                               AllAgencies[agency].nodes['eligible']['total'],
+                                               AllAgencies[agency].nodes['total']['active'])
+    print(msg)
 
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(-1001370506176) + '&parse_mode=Markdown&text=' + msg
+    response = requests.get(send_text)
+    data = response.json()
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(-1001416314327) + '&parse_mode=HTML&text=' + msg
+    response = requests.get(send_text)
+    data = response.json()
 def main():
     updater = Updater(bot_token)
     dp = updater.dispatcher
@@ -355,6 +385,9 @@ def main():
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
     updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
+    t = datetime.today()
+    updater.job_queue.run_repeating(send_new_epoch_status, 86400, first=datetime(t.year, t.month, t.day + 1, 15, 35),
+                                    context="send_new_epoch_status", )
     updater.start_polling()
 
     updater.idle()

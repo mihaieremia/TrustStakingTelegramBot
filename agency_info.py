@@ -25,6 +25,8 @@ class Agency:
         self.serviceFee, self.changebleFee = self.get_agency_fee(config)
         self.maxDelegationCap, self.delegationCap = self.get_agency_cap(config)
         self.name, self.website, self.identity = self.get_agency_name()
+        if self.name == '':
+            self.name = self.contract.address.bech32()
 
         self.nodes = {
             'eligible': {'online': 0, 'total': 0},
@@ -186,7 +188,7 @@ AgenciesLastUpdate = {}
 Agencies_results = []
 no_agency_to_be_updated = 0
 
-def update_agency(agency_to_be_updated):
+def update_agency(agency_to_be_updated, extra_info=False):
     global no_agency_to_be_updated
     global AllAgencies
     global AgenciesLastUpdate
@@ -204,7 +206,7 @@ def update_agency(agency_to_be_updated):
 
     hex_address = json.loads(address.to_json())['hex']
     contract = Address(hex_address).bech32()
-    agency = Agency(contract=SmartContract(contract))
+    agency = Agency(contract=SmartContract(contract), extra_info=extra_info)
     if agency.name != '':
         if agency.name.lower() not in AllAgencies.keys():
             Agencies_results.append(InlineQueryResultArticle(id=str(uuid4()),
