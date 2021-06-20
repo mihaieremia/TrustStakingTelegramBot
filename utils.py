@@ -16,7 +16,16 @@ db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 
 main_menu_message = emoji.cat + '''Main menu\n'''
-
+trust_agencies = ["trust staking",
+                  "trust staking swiss ",
+                  "trust staking us",
+                  "trust staking portugal"
+                  ]
+trust_agencies_addresses = ['erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvlllllsvqkhj8',
+                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl',
+                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq08llllsrvplwg',
+                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0hlllls4nnxck'
+                            ]
 agency_info = '''
 <code>Agency: </code><a href="{}">{}</a>
 <code>Contract Address: </code>{}
@@ -31,7 +40,11 @@ agency_info = '''
 <code>APR: </code>{}
 <code>Unstacked: </code>{:.2f} eGLD
 '''
-
+provider_daily_statistic = '''
+{}
+<code>Last epoch(</code>{}<code>) apy: </code>{:.2f}
+<code>Eligible nodes for next epoch: </code>{}/{}
+'''
 extra = '''
 <code>Eligible:</code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
 <code>Waiting: </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
