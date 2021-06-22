@@ -386,7 +386,9 @@ def main():
     updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
     t = datetime.today()
-    updater.job_queue.run_repeating(send_new_epoch_status, 86400, first=datetime(t.year, t.month, t.day + 1, 15, 35),
+    if t.hour >= 14 and t.minute >= 35:
+        t.replace(day=t.day + 1)
+    updater.job_queue.run_repeating(send_new_epoch_status, 86400, first=datetime(t.year, t.month, t.day, 14, 35),
                                     context="send_new_epoch_status", )
     updater.start_polling()
 
