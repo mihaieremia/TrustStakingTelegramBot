@@ -114,7 +114,9 @@ def send_notification(subscription, newAvailable, agency, agency_name):
     if not agency in old_available_values:
         old_available_values[agency] = 0
 
-    if not isinstance(old_available_values[agency], str) and abs(newAvailable - old_available_values[agency]) > 5:
+    if ((isinstance(old_available_values[agency], str) or isinstance(newAvailable, str)) \
+            and old_available_values[agency] != newAvailable) \
+            or (abs(newAvailable - old_available_values[agency]) > 5):
         subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
 
         for user in subscribed_users:
