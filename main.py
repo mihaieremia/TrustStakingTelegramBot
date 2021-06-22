@@ -305,7 +305,7 @@ def send_new_epoch_status(job):
     print(msg)
 
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                + str(-1001370506176) + '&parse_mode=Markdown&text=' + msg
+                + str(-1001370506176) + '&parse_mode=HTML&text=' + msg
     response = requests.get(send_text)
     data = response.json()
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
