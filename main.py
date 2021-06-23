@@ -286,40 +286,55 @@ def send_antiscamRO(job):
 
 def send_new_epoch_status(job):
     print("send_new_epoch_status called")
-    msg = ''
+    msg = emoji.barber_pole + f"%23dailystatus {getEpoch(datetime.today().timestamp())}" + '\n'
     for agency in trust_agencies:
-        update_agency(list(AllAgencies.keys()).index(agency), extra_info=True)
-        reply = AllAgencies[agency].contract.query(mainnet_proxy, 'getContractConfig', [])
+        agency_name = agency['name']
+        update_agency(list(AllAgencies.keys()).index(agency_name), extra_info=True)
+        reply = AllAgencies[agency_name].contract.query(mainnet_proxy, 'getContractConfig', [])
         owner_address = Address(json.loads(reply[0].to_json())['hex']).bech32()
         params = {'address': owner_address}
         resp = requests.get('http://api.elrond.tax/rewardsHistory', params)
         data = resp.json()
+        if 'avgAPR_per_provider' in data \
+                and AllAgencies[agency_name].contract.address.bech32() in data['avgAPR_per_provider']:
+            avg = data['avgAPR_per_provider'][AllAgencies[agency_name].contract.address.bech32()]
+        else:
+            avg = '0.00'
         try:
-            last_apy = data['rewards_per_epoch'][AllAgencies[agency].contract.address.bech32()][0]
+            last_apy = data['rewards_per_epoch'][AllAgencies[agency_name].contract.address.bech32()][0]
         except Exception as e:
             print("error:", e)
             last_apy = {'epoch': '-', "APRDelegator": '0.00'}
-        msg += provider_daily_statistic.format(AllAgencies[agency].name,
-                                               last_apy['epoch'],
+        fapy = float(last_apy["APRDelegator"]) \
+               * AllAgencies[agency_name].nodes['eligible']['total'] / agency['last_eligible']
+        msg += provider_daily_statistic.format(AllAgencies[agency_name].name,
                                                float(last_apy["APRDelegator"]),
-                                               AllAgencies[agency].nodes['eligible']['total'],
-                                               AllAgencies[agency].nodes['total']['active'])
-    print(msg)
+                                               AllAgencies[agency_name].nodes['eligible']['total'],
+                                               AllAgencies[agency_name].nodes['total']['active'],
+                                               fapy,
+                                               float(avg),
+                                               )
 
-    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                + str(-1001370506176) + '&parse_mode=HTML&text=' + msg
-    response = requests.get(send_text)
-    data = response.json()
-    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                + str(-1001416314327) + '&parse_mode=HTML&text=' + msg
-    response = requests.get(send_text)
-    data = response.json()
+    for user in epoch_status_users:
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                    + str(user) + '&parse_mode=HTML&text=' + msg
+        response = requests.get(send_text)
+        data = response.json()
+
+
+def update_eligible():
+    for agency in trust_agencies:
+        update_agency(list(AllAgencies.keys()).index(agency['name']), extra_info=True)
+        agency['last_eligible'] = AllAgencies[agency['name']].nodes['eligible']['total']
+
+
 def main():
     updater = Updater(bot_token)
     dp = updater.dispatcher
     global bot
     bot = dp.bot
     get_all_contracts()
+    update_eligible()
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
