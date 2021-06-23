@@ -16,16 +16,33 @@ db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 
 main_menu_message = emoji.cat + '''Main menu\n'''
-trust_agencies = ["trust staking",
-                  "trust staking swiss ",
-                  "trust staking us",
-                  "trust staking portugal"
-                  ]
-trust_agencies_addresses = ['erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvlllllsvqkhj8',
-                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl',
-                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq08llllsrvplwg',
-                            'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0hlllls4nnxck'
-                            ]
+trust_agencies = [
+    {
+        'name': "trust staking",
+        'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl',
+        'last_eligible': 0
+    },
+    {
+        'name': "trust staking swiss ",
+        'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq08llllsrvplwg',
+        'last_eligible': 0
+    },
+    {
+        'name': "trust staking us",
+        'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvlllllsvqkhj8',
+        'last_eligible': 0
+    },
+    {
+        'name': "trust staking portugal",
+        'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0hlllls4nnxck',
+        'last_eligible': 0
+    }
+]
+
+
+
+trust_no_eligible = []
+epoch_status_users = [1190803139, -1001370506176, -1001416314327]
 agency_info = '''
 <code>Agency: </code><a href="{}">{}</a>
 <code>Contract Address: </code>{}
@@ -40,11 +57,15 @@ agency_info = '''
 <code>APR: </code>{}
 <code>Unstacked: </code>{:.2f} eGLD
 '''
-provider_daily_statistic = '''
-{}
-<code>Last epoch(</code>{}<code>) apy: </code>{:.2f}
-<code>Eligible nodes for next epoch: </code>{}/{}
-'''
+provider_daily_statistic = emoji.barber_pole + '\n' \
+                           + emoji.barber_pole + '{}\n' \
+                           + emoji.barber_pole + '<code>Daily APY:</code>{:.2f}\n' \
+                           + emoji.barber_pole + '<code>Next epoch:\n' \
+                           + emoji.barber_pole + emoji.black_right_triangle + 'Eligible nodes: </code>{}/{}\n' \
+                           + emoji.barber_pole + emoji.black_right_triangle + '<code>Forecasting APY: </code>{:.2f}\n' \
+                           + emoji.barber_pole + '<code>Avg apy:</code>{:.2f}\n'
+
+
 extra = '''
 <code>Eligible:</code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
 <code>Waiting: </code>{} ''' + emoji.full_moon + ''' {} ''' + emoji.new_moon + '''
@@ -100,8 +121,13 @@ ex: \n
     @TrustStakingBot tr -> a list including all agencies that include "tr" in their name will appear.\n
     Select the one that you want from the list.
 '''
-
-
+genesis = {
+    'timestamp': 1596112200,
+    'epoch': 0,
+}
+def getEpoch(timestamp):
+    diff = timestamp - genesis['timestamp']
+    return genesis['epoch'] + int(diff // (60 * 60 * 24))
 
 
 def convert_number(number, decimals=2):

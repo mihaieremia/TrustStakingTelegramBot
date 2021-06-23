@@ -26,7 +26,11 @@ sparkles = u'\U00002728'
 anticlockwise = u'\U0001F504'
 pocket_calculator = u'\U0001F5A9'
 sad_face = u'\U0001F613'
-
+chain = u'\U000026D3'
+pushpin = u'\U0001F4CD'
+barber_pole = u'\U0001F488'
+black_right_triangle = u'\U000021AA'
+usa = u'\U0001F1FA'
 
 emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F"  # emoticons
