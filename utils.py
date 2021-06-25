@@ -16,7 +16,7 @@ db_token = 'mongodb+srv://dragos:Ao3myNA5TAA9AJvzwHxPNq2ZP7pza8T@cluster0.hdusz.
 bot_token = '1654360962:AAFNJTAZxdplj1nrgsv9LnfmCntOMR-DdGg'
 
 main_menu_message = emoji.cat + '''Main menu\n'''
-trust_agencies = [
+trust_agencies_backup = [
     {
         'name': "trust staking",
         'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzhllllsp9wvyl',
