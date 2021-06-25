@@ -284,9 +284,16 @@ def send_antiscamRO(job):
     antispam_to_delete.append((message_id, chat_id))
     print('RO:', antispam_to_delete)
 
+
 def send_new_epoch_status(job):
     print("send_new_epoch_status called")
     msg = emoji.barber_pole + f"%23dailystatus {getEpoch(datetime.today().timestamp())}" + '\n'
+    try:
+        with open('trust_agencies.json', 'r') as fp:
+            trust_agencies = json.load(fp)
+    except Exception as e:
+        print(e)
+        trust_agencies = trust_agencies_backup
     for agency in trust_agencies:
         agency_name = agency['name']
         update_agency(list(AllAgencies.keys()).index(agency_name), extra_info=True)
@@ -297,35 +304,48 @@ def send_new_epoch_status(job):
         data = resp.json()
         if 'avgAPR_per_provider' in data \
                 and AllAgencies[agency_name].contract.address.bech32() in data['avgAPR_per_provider']:
-            avg = data['avgAPR_per_provider'][AllAgencies[agency_name].contract.address.bech32()]
+            avg = float(data['avgAPR_per_provider'][AllAgencies[agency_name].contract.address.bech32()])
         else:
-            avg = '0.00'
+            avg = 0.00
         try:
-            last_apy = data['rewards_per_epoch'][AllAgencies[agency_name].contract.address.bech32()][0]
+            last = data['rewards_per_epoch'][AllAgencies[agency_name].contract.address.bech32()][0]
         except Exception as e:
             print("error:", e)
             last_apy = {'epoch': '-', "APRDelegator": '0.00'}
-        fapy = float(last_apy["APRDelegator"]) \
-               * AllAgencies[agency_name].nodes['eligible']['total'] / agency['last_eligible']
+        fapy = 0.0
+        current_eligible = AllAgencies[agency_name].nodes['eligible']['total']
+        last_apy = float(last["APRDelegator"])
+        if last_apy:
+            fapy = last_apy * current_eligible / agency['last_eligible']
         msg += provider_daily_statistic.format(AllAgencies[agency_name].name,
-                                               float(last_apy["APRDelegator"]),
-                                               AllAgencies[agency_name].nodes['eligible']['total'],
+                                               last_apy,
+                                               current_eligible,
                                                AllAgencies[agency_name].nodes['total']['active'],
                                                fapy,
-                                               float(avg),
+                                               avg,
                                                )
+        agency['last_eligible'] = current_eligible
 
     for user in epoch_status_users:
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                     + str(user) + '&parse_mode=HTML&text=' + msg
         response = requests.get(send_text)
         data = response.json()
-
+    with open('trust_agencies.json', 'w') as fp:
+        json.dump(trust_agencies, fp)
 
 def update_eligible():
-    for agency in trust_agencies:
-        update_agency(list(AllAgencies.keys()).index(agency['name']), extra_info=True)
-        agency['last_eligible'] = AllAgencies[agency['name']].nodes['eligible']['total']
+    try:
+        with open('trust_agencies.json', 'r') as fp:
+            trust_agencies = json.load(fp)
+    except Exception as e:
+        print(e)
+        trust_agencies = trust_agencies_backup
+        for agency in trust_agencies:
+            update_agency(list(AllAgencies.keys()).index(agency['name']), extra_info=True)
+            agency['last_eligible'] = AllAgencies[agency['name']].nodes['eligible']['total']
+    with open('trust_agencies.json', 'w') as fp:
+        json.dump(trust_agencies, fp)
 
 
 def main():
