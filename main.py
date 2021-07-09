@@ -1,6 +1,6 @@
 import threading
 import time
-from datetime import datetime
+import datetime
 
 from telegram import *
 from telegram.ext import *
@@ -97,81 +97,86 @@ def telegram_bot_sendtext(job):
         else:
             newAvailable = TS.maxDelegationCap - TS.totalActiveStake
 
-        if (agency in old_available_values
-            and (old_available_values[agency] == 'unlimited' or old_available_values[agency] >= 1)) \
-                or newAvailable == 'unlimited' or newAvailable >= 1:
-            background_thread = Thread(target=send_notification, args=(subscription, newAvailable, agency, TS.name))
-            background_thread.start()
+        if agency in old_available_values:
+            oldAvailable = old_available_values[agency]
+            if newAvailable == 'unlimited' or newAvailable >= 1:
+                if oldAvailable != newAvailable:
+                    background_thread = Thread(target=send_notification,
+                                               args=(subscription, newAvailable, agency, TS.name))
+                    background_thread.start()
+            elif oldAvailable == 'unlimited' or oldAvailable >= 1:
+                background_thread = Thread(target=send_full_notification,
+                                           args=(subscription, TS.name))
+                background_thread.start()
+
+        old_available_values[agency] = newAvailable
+
+
+def send_full_notification(subscription, agency, agency_name):
+    subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
+    for user in subscribed_users:
+        if user['_id'] not in epoch_status_users:
+            return
+        bot_message = '{} is full again!'.format(agency_name) + emoji.sad_face
+        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                    + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
+        response = requests.get(send_text)
+        data = response.json()
+        if not data['ok']:
+            print(user['_id'], ":", data)
+        delete_spam(user['_id'], agency_name)
+        time.sleep(0.1)
 
 
 def send_notification(subscription, newAvailable, agency, agency_name):
-    global oldAvailable
     global AllAgencies
 
     requests = 0
     bad_requests = 0
+    subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
+    for user in subscribed_users:
+        requests += 1
+        if user['_id'] not in epoch_status_users:
+            return
+        bad_requests += check_and_notify(user['_id'], newAvailable, agency, agency_name)
 
-    if not agency in old_available_values:
-        old_available_values[agency] = 0
-
-    if ((isinstance(old_available_values[agency], str) or isinstance(newAvailable, str)) \
-            and old_available_values[agency] != newAvailable) \
-            or (abs(newAvailable - old_available_values[agency]) > 5):
-        subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
-
-        for user in subscribed_users:
-            requests += 1
-            bad_requests += check_and_notify(user['_id'], newAvailable, old_available_values[agency], agency_name)
-            old_available_values[agency] = newAvailable
-        if requests >= 1:
-            print('\t\t notifications sent for agency:', agency_name, 'free space: ', newAvailable, 'eGLD')
-            print('\t\t force update agency:', agency_name)
-            updating = Thread(target=update_agency, args=(list(AllAgencies.keys()).index(agency),))
-            updating.start()
-            print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
+    if requests >= 1:
+        print('\t\t notifications sent for agency:', agency_name, 'free space: ', newAvailable, 'eGLD')
+        print('\t\t force update agency:', agency_name)
+        updating = Thread(target=update_agency, args=(list(AllAgencies.keys()).index(agency),))
+        updating.start()
+        print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
 
 
-def check_and_notify(user_id, newAvailable, oldAvailable, name):
+def check_and_notify(user_id, newAvailable, agency, name):
     print('\tcheck_and_notify called')
     global messages_to_be_deleted
-    if newAvailable == 'unlimited' or newAvailable >= 1:
-        bot_message = emoji.attention
-        if isinstance(newAvailable, float):
-            bot_message += " {:.2f}".format(newAvailable)
-        else:
-            bot_message += newAvailable
-        bot_message += " eGLD available to be staked for {}".format(name)
 
-        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                    + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
-        response = requests.get(send_text)
-        data = response.json()
-        if not data['ok']:
-            print(user_id, ":", data)
-            return 0
-        message_id = data['result']['message_id']
-        chat_id = data['result']['chat']['id']
-        time.sleep(0.1)
-        if user_id not in messages_to_be_deleted.keys():
-            messages_to_be_deleted[user_id] = {}
-        if name in messages_to_be_deleted[user_id].keys():
-            delete_spam(user_id, name)
-        messages_to_be_deleted[user_id][name] = [message_id, chat_id]
-
-    elif oldAvailable == 'unlimited' or (newAvailable < oldAvailable and oldAvailable >= 1):
-        bot_message = '{} is full again!'.format(name) + emoji.sad_face
-        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                    + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
-        response = requests.get(send_text)
-        data = response.json()
-        if not data['ok']:
-            print(user_id, ":", data)
-            return 0
-        delete_spam(user_id, name)
-        time.sleep(0.1)
+    bot_message = emoji.attention
+    if isinstance(newAvailable, float):
+        bot_message += " {:.2f}".format(newAvailable)
     else:
-        print("\t error: user_id", user_id, "agency", name, "newAvailable", newAvailable, 'oldAvailable', oldAvailable)
+        bot_message += newAvailable
+    bot_message += " eGLD available to be staked for {}".format(name)
+
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(user_id) + '&parse_mode=Markdown&text=' + bot_message
+    response = requests.get(send_text)
+    data = response.json()
+    if not data['ok']:
+        if data['description'] == 'Forbidden: bot was blocked by the user':
+            telegramDb.unsubscribe(user_id, 'availableSpace', agency)
+        print(user_id, ":", data)
         return 0
+    message_id = data['result']['message_id']
+    chat_id = data['result']['chat']['id']
+    time.sleep(0.1)
+    if user_id not in messages_to_be_deleted.keys():
+        messages_to_be_deleted[user_id] = {}
+    if name in messages_to_be_deleted[user_id].keys():
+        delete_spam(user_id, name)
+    messages_to_be_deleted[user_id][name] = [message_id, chat_id]
+
     return 1
 
 
@@ -287,7 +292,7 @@ def send_antiscamRO(job):
 
 def send_new_epoch_status(job):
     print("send_new_epoch_status called")
-    msg = emoji.barber_pole + f"%23dailystatus {getEpoch(datetime.today().timestamp())}" + '\n'
+    msg = emoji.barber_pole + f"%23dailystatus {getEpoch(datetime.datetime.today().timestamp())}" + '\n'
     try:
         with open('trust_agencies.json', 'r') as fp:
             trust_agencies = json.load(fp)
@@ -329,17 +334,22 @@ def send_new_epoch_status(job):
     for user in epoch_status_users:
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                     + str(user) + '&parse_mode=HTML&text=' + msg
+
         response = requests.get(send_text)
         data = response.json()
     with open('trust_agencies.json', 'w') as fp:
         json.dump(trust_agencies, fp)
 
+
 def update_eligible():
+    print("update_eligible called")
     try:
         with open('trust_agencies.json', 'r') as fp:
             trust_agencies = json.load(fp)
+            print('\texisting values loaded')
     except Exception as e:
         print(e)
+        print('\tfile not found, creating new one...')
         trust_agencies = trust_agencies_backup
         for agency in trust_agencies:
             update_agency(list(AllAgencies.keys()).index(agency['name']), extra_info=True)
@@ -420,13 +430,11 @@ def main():
 
     updater.job_queue.run_repeating(telegram_bot_sendtext, 10, context="availableSpace")
     updater.job_queue.run_repeating(update_agencies_info, 2, context="update_agencies_info")
-    updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
+    # updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
-    t = datetime.today()
-    if t.hour >= 14 and t.minute >= 35:
-        t.replace(day=t.day + 1)
-    updater.job_queue.run_repeating(send_new_epoch_status, 86400, first=datetime(t.year, t.month, t.day, 14, 35),
-                                    context="send_new_epoch_status", )
+
+    t = datetime.time(14, 35)
+    updater.job_queue.run_daily(send_new_epoch_status, t, context="send_new_epoch_status")
     updater.start_polling()
 
     updater.idle()

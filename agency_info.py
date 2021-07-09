@@ -59,13 +59,18 @@ class Agency:
         metaData = self.contract.query(self.proxy, 'getMetaData', [])
         if metaData == []:
             return "", "", ""
-        name_in_hex = json.loads(metaData[0].to_json())['hex']
+        name_in_hex = metaData[0].hex
         name = bytes.fromhex(name_in_hex).decode('utf-8')
         if 'Pro Crypto' in name:
             name = 'ProCrypto 🌍 Distributed Staking'
-        website_in_hex = json.loads(metaData[1].to_json())['hex']
-        website = bytes.fromhex(website_in_hex).decode('utf-8')
-        identity_in_hex = json.loads(metaData[2].to_json())['hex']
+        if hasattr(metaData[1], 'hex'):
+            website_in_hex = metaData[1].hex
+            website = bytes.fromhex(website_in_hex).decode('utf-8')
+        else:
+            website = '-'
+
+
+        identity_in_hex = metaData[2].hex
         identity = bytes.fromhex(identity_in_hex).decode('utf-8')
         return name, website, identity
 
