@@ -101,22 +101,26 @@ def telegram_bot_sendtext(job):
             oldAvailable = old_available_values[agency]
             if newAvailable == 'unlimited' or newAvailable >= 1:
                 if oldAvailable != newAvailable:
+                    print("\ttelegram_bot_sendtext available - " + TS.name)
                     background_thread = Thread(target=send_notification,
                                                args=(subscription, newAvailable, agency, TS.name))
                     background_thread.start()
+                else:
+                    print("\ttelegram_bot_sendtext nothing changed - " + TS.name)
             elif oldAvailable == 'unlimited' or oldAvailable >= 1:
+                print("\ttelegram_bot_sendtext full - " + TS.name)
                 background_thread = Thread(target=send_full_notification,
-                                           args=(subscription, TS.name))
+                                           args=(subscription, agency, TS.name))
                 background_thread.start()
-
+        else:
+            print("\ttelegram_bot_sendtext first value - " + TS.name)
         old_available_values[agency] = newAvailable
 
 
 def send_full_notification(subscription, agency, agency_name):
+    print('send_full_notification called')
     subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
     for user in subscribed_users:
-        if user['_id'] not in epoch_status_users:
-            return
         bot_message = '{} is full again!'.format(agency_name) + emoji.sad_face
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
                     + str(user['_id']) + '&parse_mode=Markdown&text=' + bot_message
@@ -125,10 +129,18 @@ def send_full_notification(subscription, agency, agency_name):
         if not data['ok']:
             print(user['_id'], ":", data)
         delete_spam(user['_id'], agency_name)
+        message_id = data['result']['message_id']
+        chat_id = data['result']['chat']['id']
         time.sleep(0.1)
+        if user['_id'] not in messages_to_be_deleted.keys():
+            messages_to_be_deleted[user['_id']] = {}
+        if agency_name in messages_to_be_deleted[user['_id']].keys():
+            delete_spam(user['_id'], agency_name)
+        messages_to_be_deleted[user['_id']][agency_name] = [message_id, chat_id]
 
 
 def send_notification(subscription, newAvailable, agency, agency_name):
+    print('send_notification called')
     global AllAgencies
 
     requests = 0
@@ -136,13 +148,10 @@ def send_notification(subscription, newAvailable, agency, agency_name):
     subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
     for user in subscribed_users:
         requests += 1
-        if user['_id'] not in epoch_status_users:
-            return
         bad_requests += check_and_notify(user['_id'], newAvailable, agency, agency_name)
 
     if requests >= 1:
         print('\t\t notifications sent for agency:', agency_name, 'free space: ', newAvailable, 'eGLD')
-        print('\t\t force update agency:', agency_name)
         updating = Thread(target=update_agency, args=(list(AllAgencies.keys()).index(agency),))
         updating.start()
         print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
@@ -167,7 +176,7 @@ def check_and_notify(user_id, newAvailable, agency, name):
         if data['description'] == 'Forbidden: bot was blocked by the user':
             telegramDb.unsubscribe(user_id, 'availableSpace', agency)
         print(user_id, ":", data)
-        return 0
+        return 1
     message_id = data['result']['message_id']
     chat_id = data['result']['chat']['id']
     time.sleep(0.1)
@@ -177,7 +186,7 @@ def check_and_notify(user_id, newAvailable, agency, name):
         delete_spam(user_id, name)
     messages_to_be_deleted[user_id][name] = [message_id, chat_id]
 
-    return 1
+    return 0
 
 
 antispam_to_delete = []
@@ -190,6 +199,7 @@ def delete_antiscam():
         bot.deleteMessage(chat, message)
         time.sleep(0.1)
     antispam_to_delete = []
+
 
 def antiscam(job):
     delete_antiscam()
@@ -241,6 +251,7 @@ def send_antiscam(job):
     message_id = data['result']['message_id']
     chat_id = data['result']['chat']['id']
     antispam_to_delete.append((message_id, chat_id))
+
 
 def send_antiscamRO(job):
     global antispam_to_delete

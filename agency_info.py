@@ -219,7 +219,6 @@ def update_agency(agency_to_be_updated, extra_info=False):
                                                              input_message_content=InputTextMessageContent(
                                                                  agency.name.lower())))
         AllAgencies[agency.name.lower()] = agency
-    print(agency.name, "updated!")
 
 def get_user_staking_agencies(addr):
     print('get_user_staking_agencies called')
