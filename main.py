@@ -444,7 +444,7 @@ def main():
     # updater.job_queue.run_repeating(antiscam, 43200, first=21600, context="antiscam")
     updater.job_queue.run_repeating(update_price, 120, context="price_update", )
 
-    t = datetime.time(14, 35)
+    t = datetime.time(14, 40)
     updater.job_queue.run_daily(send_new_epoch_status, t, context="send_new_epoch_status")
     updater.start_polling()
 
