@@ -9,7 +9,8 @@ from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
     update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts, \
     AllAgencies, update_agency
 from redelegation_period import redelegation_period, send_result
-from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe
+from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe, \
+    set_threshold, set_group_threshold
 from utils import *
 from database import telegramDb
 from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator, \
@@ -74,6 +75,7 @@ old_available_values = {}
 messages_to_be_deleted = {}
 bot = None
 
+
 def delete_spam(user, agency):
     global messages_to_be_deleted
     global bot
@@ -105,19 +107,17 @@ def telegram_bot_sendtext(job):
                     background_thread = Thread(target=send_notification,
                                                args=(subscription, newAvailable, agency, TS.name))
                     background_thread.start()
-                else:
-                    print("\ttelegram_bot_sendtext nothing changed - " + TS.name)
             elif oldAvailable == 'unlimited' or oldAvailable >= 1:
                 print("\ttelegram_bot_sendtext full - " + TS.name)
                 background_thread = Thread(target=send_full_notification,
-                                           args=(subscription, agency, TS.name))
+                                           args=(subscription, newAvailable, agency, TS.name))
                 background_thread.start()
         else:
             print("\ttelegram_bot_sendtext first value - " + TS.name)
-        old_available_values[agency] = newAvailable
+            old_available_values[agency] = newAvailable
 
 
-def send_full_notification(subscription, agency, agency_name):
+def send_full_notification(subscription, newAvailable, agency, agency_name):
     print('send_full_notification called')
     subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
     for user in subscribed_users:
@@ -128,15 +128,16 @@ def send_full_notification(subscription, agency, agency_name):
         data = response.json()
         if not data['ok']:
             print(user['_id'], ":", data)
-        delete_spam(user['_id'], agency_name)
-        message_id = data['result']['message_id']
-        chat_id = data['result']['chat']['id']
-        time.sleep(0.1)
-        if user['_id'] not in messages_to_be_deleted.keys():
-            messages_to_be_deleted[user['_id']] = {}
-        if agency_name in messages_to_be_deleted[user['_id']].keys():
-            delete_spam(user['_id'], agency_name)
-        messages_to_be_deleted[user['_id']][agency_name] = [message_id, chat_id]
+        else:
+            message_id = data['result']['message_id']
+            chat_id = data['result']['chat']['id']
+            time.sleep(0.1)
+            if user['_id'] not in messages_to_be_deleted.keys():
+                messages_to_be_deleted[user['_id']] = {}
+            if agency_name in messages_to_be_deleted[user['_id']].keys():
+                delete_spam(user['_id'], agency_name)
+            messages_to_be_deleted[user['_id']][agency_name] = [message_id, chat_id]
+    old_available_values[agency] = newAvailable
 
 
 def send_notification(subscription, newAvailable, agency, agency_name):
@@ -145,20 +146,28 @@ def send_notification(subscription, newAvailable, agency, agency_name):
 
     requests = 0
     bad_requests = 0
+    under_requests = 0
     subscribed_users = telegramDb.get_subscribed_users(subscription, agency)
     for user in subscribed_users:
         requests += 1
-        bad_requests += check_and_notify(user['_id'], newAvailable, agency, agency_name)
-
+        threshold = telegramDb.get_threshold(user['_id'], subscription, agency)
+        print(old_available_values[agency], " ", newAvailable)
+        if abs(old_available_values[agency] - newAvailable) >= threshold:
+            bad_requests += check_and_notify(user['_id'], newAvailable, agency, agency_name)
+        else:
+            under_requests += 1
+    old_available_values[agency] = newAvailable
     if requests >= 1:
         print('\t\t notifications sent for agency:', agency_name, 'free space: ', newAvailable, 'eGLD')
         updating = Thread(target=update_agency, args=(list(AllAgencies.keys()).index(agency),))
         updating.start()
-        print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
+        if bad_requests > 0:
+            print("\t\tbad requests", str(bad_requests) + "/" + str(requests))
+        if under_requests > 0:
+            print("\t\tunder threshold requests", str(under_requests) + "/" + str(requests))
 
 
 def check_and_notify(user_id, newAvailable, agency, name):
-    print('\tcheck_and_notify called')
     global messages_to_be_deleted
 
     bot_message = emoji.attention
@@ -428,8 +437,13 @@ def main():
                 CallbackQueryHandler(subscribe, pattern='new_agency'),
                 CallbackQueryHandler(unsubscribe, pattern='.*_unsubscribe$'),
                 MessageHandler(Filters.text & ~Filters.command, subscribeAvailableSpace),
+                CallbackQueryHandler(set_threshold, pattern='.*_threshold'),
                 CallbackQueryHandler(callback_subscription, pattern='availableSpace$'),  # back
                 CallbackQueryHandler(main_menu, pattern='back_main_menu'),
+            ],
+            availableSpace_threshold: [
+                MessageHandler(Filters.text & ~Filters.command, set_threshold),
+                CallbackQueryHandler(callback_subscription, pattern='availableSpace$')
             ]
         },
         fallbacks=[CommandHandler('start', start)])

@@ -117,13 +117,18 @@ def callback_subscription(update, context):
         if agency not in AllAgencies:
             telegramDb.unsubscribe(user_id, subscription, agency)
             continue
+        threshold = telegramDb.get_threshold(user_id, subscription, agency)
         keyboard.inline_keyboard.insert(0,
             [
                 InlineKeyboardButton(AllAgencies[agency].name,
                                      callback_data=agency + '_' + subscription + '_unsubscribe'),
+                InlineKeyboardButton(threshold,
+                                     callback_data=agency + '_' + subscription + '_threshold'),
             ])
     if len(agencies) == 0:
         reply_text = 'No subscriptions yet.'
+    keyboard.inline_keyboard.insert(0, [InlineKeyboardButton('Agency name', callback_data='no_info'),
+                                        InlineKeyboardButton('Threshold', callback_data='no_info')])
     context.bot.edit_message_text(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id,
@@ -131,6 +136,53 @@ def callback_subscription(update, context):
         reply_markup=keyboard
     )
     return get_return_state(query.data)
+
+
+agency_thresholds_to_be_set = {}
+def set_threshold(update, context):
+    global AllAgencies
+    print("\tset_threshold called")
+    user_id = update.effective_chat['id']
+    if update.message is None:
+        bot = context.bot
+        query = update.callback_query
+        agency, subscribe_method, _ = query.data.split("_")
+        reply_markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton(emoji.back + " Back", callback_data='availableSpace')]
+        ])
+        bot.edit_message_text(
+            chat_id=query.message.chat_id,
+            message_id=query.message.message_id,
+            text='Please indicate the threshold for '+AllAgencies[agency].name+':',
+            reply_markup=reply_markup
+        )
+        agency_thresholds_to_be_set[user_id] = agency
+        return availableSpace_threshold
+
+    threshold = update.message.text
+    reply = availableSpace_threshold
+    try:
+        egld = float(threshold)
+        if not egld > 0:
+            text = "Please enter a positive number:"
+        else:
+            agency = agency_thresholds_to_be_set[user_id]
+            telegramDb.set_threshold(user_id, 'availableSpace', agency, egld)
+            del agency_thresholds_to_be_set[user_id]
+            text = 'Threshold successfully set!'
+            reply = availableSpace
+    except Exception as e:
+        text = "Please enter a number"
+        print("\tError: %s" % str(e))
+
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton(emoji.back + " Back", callback_data='availableSpace')]
+    ])
+    update.message.reply_text(
+        text=text,
+        reply_markup=reply_markup
+    )
+    return reply
 
 
 def subscriptions(update, context):

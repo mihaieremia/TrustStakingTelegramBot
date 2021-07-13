@@ -58,6 +58,22 @@ class Database:
     def subscribe(self, user_id, subscription, agency):
         self.users.update_one({"_id": user_id}, {"$push": {subscription: agency}})
 
+    def set_threshold(self, user_id, subscription, agency, threshold):
+        user_subscription = self.users.find_one({"_id": user_id})
+        to_be_updated = {}
+        if subscription + '_threshold' in user_subscription:
+            to_be_updated = user_subscription[subscription + '_threshold']
+        to_be_updated[agency] = threshold
+
+        self.users.update_one({"_id": user_id}, {"$set": {subscription + '_threshold': to_be_updated}})
+
+    def get_threshold(self, user_id, subscription, agency):
+        user_subscription = self.users.find_one({"_id": user_id})
+        if subscription + '_threshold' in user_subscription:
+            if agency in user_subscription[subscription + '_threshold']:
+                return user_subscription[subscription + '_threshold'][agency]
+        return 1.0
+
     def unsubscribe(self, user_id, subscription, agency):
         user_subscription = self.users.find_one({"_id": user_id})[subscription]
         user_subscription.remove(agency)
