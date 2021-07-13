@@ -1,7 +1,7 @@
 import json
 
 MainMenu, AgencyInfo, ChangeAgency, Wallets, WalletConfiguration, WalletStatus, \
-RedelegationPerion, SubscriptionsMenu, availableSpace, MEXCalc = range(10)
+RedelegationPerion, SubscriptionsMenu, availableSpace, availableSpace_threshold, MEXCalc = range(11)
 
 import requests
 from erdpy.contracts import SmartContract
