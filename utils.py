@@ -36,6 +36,11 @@ trust_agencies_backup = [
         'name': "trust staking portugal",
         'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0hlllls4nnxck',
         'last_eligible': 0
+    },
+    {
+        'name': "trust the netherlands",
+        'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjlllllsuz4lc5',
+        'last_eligible': 0
     }
 ]
 
