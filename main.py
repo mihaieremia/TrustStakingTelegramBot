@@ -10,7 +10,7 @@ from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
     AllAgencies, update_agency
 from redelegation_period import redelegation_period, send_result
 from subscriptions import subscriptions, unsubscribe, callback_subscription, subscribeAvailableSpace, subscribe, \
-    set_threshold, set_group_threshold
+    set_threshold
 from utils import *
 from database import telegramDb
 from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, delete_wallet, mex_calculator, \
@@ -341,7 +341,10 @@ def send_new_epoch_status(job):
         current_eligible = AllAgencies[agency_name].nodes['eligible']['total']
         last_apy = float(last["APRDelegator"])
         if last_apy:
-            fapy = last_apy * current_eligible / agency['last_eligible']
+            if agency['last_eligible'] > 0:
+                fapy = round(last_apy * current_eligible / agency['last_eligible'], 2)
+            else:
+                fapy = '-'
         msg += provider_daily_statistic.format(AllAgencies[agency_name].name,
                                                last_apy,
                                                current_eligible,

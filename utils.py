@@ -67,7 +67,7 @@ provider_daily_statistic = emoji.barber_pole + '\n' \
                            + emoji.barber_pole + '<code>Daily APY:</code>{:.2f}\n' \
                            + emoji.barber_pole + '<code>Next epoch:\n' \
                            + emoji.barber_pole + emoji.black_right_triangle + 'Eligible nodes: </code>{}/{}\n' \
-                           + emoji.barber_pole + emoji.black_right_triangle + '<code>Forecasting APY: </code>{:.2f}\n' \
+                           + emoji.barber_pole + emoji.black_right_triangle + '<code>Forecasting APY: </code>{}\n' \
                            + emoji.barber_pole + '<code>Avg apy:</code>{:.2f}\n'
 
 
