@@ -23,7 +23,7 @@ trust_agencies_backup = [
         'last_eligible': 0
     },
     {
-        'name': "trust staking swiss ",
+        'name': "trust staking swiss",
         'address': 'erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqq08llllsrvplwg',
         'last_eligible': 0
     },
@@ -44,7 +44,13 @@ trust_agencies_backup = [
     }
 ]
 
+def send_update_error(error):
+    msg = 'Daily update error:' + error
+    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                + str(1190803139) + '&parse_mode=HTML&text=' + msg
 
+    response = requests.get(send_text)
+    data = response.json()
 
 trust_no_eligible = []
 epoch_status_users = [1190803139, -1001370506176, -1001416314327]
