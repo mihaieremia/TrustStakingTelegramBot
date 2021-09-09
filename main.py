@@ -4,7 +4,7 @@ import datetime
 
 from telegram import *
 from telegram.ext import *
-
+import sys
 from agency_info import Agency, agency_info_handle, agency_info_handle_extra, \
     update_agencies_info, agencies_search, show_agency, change_agency, update_user_agency, get_all_contracts, \
     AllAgencies, update_agency
@@ -324,9 +324,18 @@ def send_new_epoch_status(job):
         update_agency(list(AllAgencies.keys()).index(agency_name), extra_info=True)
         reply = AllAgencies[agency_name].contract.query(mainnet_proxy, 'getContractConfig', [])
         owner_address = Address(json.loads(reply[0].to_json())['hex']).bech32()
-        params = {'address': owner_address}
-        resp = requests.get('http://api.elrond.tax/rewardsHistory', params)
+        url = 'http://api.elrond.tax/accounts/'
+        resp = requests.get(url + owner_address + '/txHistory')
         data = resp.json()
+        if 'error' in data:
+            print(data['error'] + " " + agency_name, file=sys.stderr)
+            send_update_error(data['error'] + " " + agency_name)
+            break
+        if 'rewards' not in data:
+            print('No rewards' + " " + agency_name, file=sys.stderr)
+            send_update_error('No rewards' + " " + agency_name)
+            break
+        data = data['rewards']
         if 'avgAPR_per_provider' in data \
                 and AllAgencies[agency_name].contract.address.bech32() in data['avgAPR_per_provider']:
             avg = float(data['avgAPR_per_provider'][AllAgencies[agency_name].contract.address.bech32()])
