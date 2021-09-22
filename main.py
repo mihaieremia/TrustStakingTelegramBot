@@ -17,6 +17,8 @@ from wallets import wallets, wallet_configuration, wallet_info, rename_wallet, d
     update_price
 from threading import Thread
 
+import prettytable as pt
+
 reply_buttons = InlineKeyboardMarkup([
     [
         InlineKeyboardButton(emoji.info + " Agency info", callback_data='agency_info')
@@ -312,7 +314,11 @@ def send_antiscamRO(job):
 
 def send_new_epoch_status(job):
     print("send_new_epoch_status called")
-    msg = emoji.barber_pole + f"%23dailystatus {getEpoch(datetime.datetime.today().timestamp())}" + '\n'
+    msg = f"%23dailystatus {getEpoch(datetime.datetime.today().timestamp())}\n"
+    table = pt.PrettyTable(['Daily', 'Nodes', 'Forcast'])
+    table.align['Pool'] = 'l'
+    table.align['Daily'] = 'l'
+    table.align['Tomorrow'] = 'l'
     try:
         with open('trust_agencies.json', 'r') as fp:
             trust_agencies = json.load(fp)
@@ -354,18 +360,39 @@ def send_new_epoch_status(job):
                 fapy = round(last_apy * current_eligible / agency['last_eligible'], 2)
             else:
                 fapy = '-'
-        msg += provider_daily_statistic.format(AllAgencies[agency_name].name,
-                                               last_apy,
-                                               current_eligible,
-                                               AllAgencies[agency_name].nodes['total']['active'],
-                                               fapy,
-                                               avg,
-                                               )
+        # msg += provider_daily_statistic.format(AllAgencies[agency_name].name,
+        #                                        last_apy,
+        #                                        current_eligible,
+        #                                        AllAgencies[agency_name].nodes['total']['active'],
+        #                                        fapy,
+        #                                        avg,
+        #                                        )
+        name = AllAgencies[agency_name].name.replace('Trust Staking', '')
+        if name == '':
+            name = '--M--'
+        elif 'US' in name:
+            name = '-USA-'
+        elif 'Swiss' in name:
+            name = 'Swiss'
+        elif 'Portugal' in name:
+            name = '-PRT-'
+        elif 'Netherlands' in name:
+            name = '-NLD-'
+        table.add_row(['-----', '-----', '-------'])
+        table.add_row(['-----', name.strip(), '-------'])
+        table.add_row(['-----', '-----', '-------'])
+        table.add_row([f'{last_apy:.2f}',
+                       str(current_eligible) + '/' + str(AllAgencies[agency_name].nodes['total']['active']), fapy])
         agency['last_eligible'] = current_eligible
-
+    table = str(table)\
+        .replace(' | --M-- | --', 'Trust Staking')\
+        .replace('--- | Swiss | -----', 'Trust Staking Swiss')\
+        .replace('- | -USA- | ----', 'Trust Staking US')\
+        .replace('----- | -PRT- | -------', 'Trust Staking Portugal ') \
+        .replace('---- | -NLD- | ------', 'Trust the Netherlands')
     for user in epoch_status_users:
         send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                    + str(user) + '&parse_mode=HTML&text=' + msg
+                    + str(user) + '&parse_mode=HTML&text=' + msg + f'<pre>{table}</pre>'
 
         response = requests.get(send_text)
         data = response.json()
