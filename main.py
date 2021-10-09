@@ -333,6 +333,7 @@ def send_new_epoch_status(job):
         trust_agencies = trust_agencies_backup
     fail = False
     for agency in trust_agencies:
+        time.sleep(2)
         agency_name = agency['name']
         update_agency(list(AllAgencies.keys()).index(agency_name), extra_info=True)
         reply = AllAgencies[agency_name].contract.query(mainnet_proxy, 'getContractConfig', [])
