@@ -316,7 +316,7 @@ def send_new_epoch_status(job):
     print("send_new_epoch_status called")
     global updater
     global retry
-    if retry >= 3:
+    if retry >= 10:
         send_update_error('Max retry: ' + str(retry))
         return
     retry += 1
@@ -342,16 +342,14 @@ def send_new_epoch_status(job):
         data = resp.json()
         if 'error' in data:
             print(data['error'] + " " + agency_name, file=sys.stderr)
-            send_update_error(data['error'] + " " + agency_name + ' retry: ' + str(retry))
-            send_update_error(json.dumps(data))
+            send_update_error(data['error'] + " " + agency_name + ' retry: ' + str(retry) + '\n' + json.dumps(data))
 
             updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
             fail = True
             break
         if 'rewards' not in data:
             print('No rewards' + " " + agency_name, file=sys.stderr)
-            send_update_error('No rewards' + " " + agency_name + ' retry: ' + str(retry))
-            send_update_error(json.dumps(data))
+            send_update_error('No rewards' + " " + agency_name + ' retry: ' + str(retry) + '\n' + json.dumps(data))
 
             updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
             fail = True
@@ -366,8 +364,7 @@ def send_new_epoch_status(job):
             last = data['rewards_per_epoch'][AllAgencies[agency_name].contract.address.bech32()][0]
         except Exception as e:
             print("error:", e)
-            send_update_error(e + " " + agency_name + ' retry: ' + str(retry))
-            send_update_error(json.dumps(data))
+            send_update_error(e + " " + agency_name + ' retry: ' + str(retry) + '\n' + json.dumps(data))
             updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
             fail = True
             break
