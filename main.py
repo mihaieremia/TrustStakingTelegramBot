@@ -76,7 +76,7 @@ def main_menu(update: Update, context: CallbackContext):
 old_available_values = {}
 messages_to_be_deleted = {}
 bot = None
-
+updater = None
 
 def delete_spam(user, agency):
     global messages_to_be_deleted
@@ -311,9 +311,15 @@ def send_antiscamRO(job):
     antispam_to_delete.append((message_id, chat_id))
     print('RO:', antispam_to_delete)
 
-
+retry = 0
 def send_new_epoch_status(job):
     print("send_new_epoch_status called")
+    global updater
+    global retry
+    if retry >= 3:
+        send_update_error('Max retry: ' + str(retry))
+        return
+    retry += 1
     msg = f"%23dailystatus {getEpoch(datetime.datetime.today().timestamp())}\n"
     table = pt.PrettyTable(['Daily', 'Nodes', 'Forcast'])
     table.align['Pool'] = 'l'
@@ -325,6 +331,7 @@ def send_new_epoch_status(job):
     except Exception as e:
         print(e)
         trust_agencies = trust_agencies_backup
+    fail = False
     for agency in trust_agencies:
         agency_name = agency['name']
         update_agency(list(AllAgencies.keys()).index(agency_name), extra_info=True)
@@ -335,11 +342,19 @@ def send_new_epoch_status(job):
         data = resp.json()
         if 'error' in data:
             print(data['error'] + " " + agency_name, file=sys.stderr)
-            send_update_error(data['error'] + " " + agency_name)
+            send_update_error(data['error'] + " " + agency_name + ' retry: ' + str(retry))
+            send_update_error(json.dumps(data))
+
+            updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
+            fail = True
             break
         if 'rewards' not in data:
             print('No rewards' + " " + agency_name, file=sys.stderr)
-            send_update_error('No rewards' + " " + agency_name)
+            send_update_error('No rewards' + " " + agency_name + ' retry: ' + str(retry))
+            send_update_error(json.dumps(data))
+
+            updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
+            fail = True
             break
         data = data['rewards']
         if 'avgAPR_per_provider' in data \
@@ -351,6 +366,11 @@ def send_new_epoch_status(job):
             last = data['rewards_per_epoch'][AllAgencies[agency_name].contract.address.bech32()][0]
         except Exception as e:
             print("error:", e)
+            send_update_error(e + " " + agency_name + ' retry: ' + str(retry))
+            send_update_error(json.dumps(data))
+            updater.job_queue.run_once(send_new_epoch_status, 120, context="send_new_epoch_status")
+            fail = True
+            break
             last_apy = {'epoch': '-', "APRDelegator": '0.00'}
         fapy = 0.0
         current_eligible = AllAgencies[agency_name].nodes['eligible']['total']
@@ -384,20 +404,22 @@ def send_new_epoch_status(job):
         table.add_row([f'{last_apy:.2f}',
                        str(current_eligible) + '/' + str(AllAgencies[agency_name].nodes['total']['active']), fapy])
         agency['last_eligible'] = current_eligible
-    table = str(table)\
-        .replace(' | --M-- | --', 'Trust Staking')\
-        .replace('--- | Swiss | -----', 'Trust Staking Swiss')\
-        .replace('- | -USA- | ----', 'Trust Staking US')\
-        .replace('----- | -PRT- | -------', 'Trust Staking Portugal ') \
-        .replace('---- | -NLD- | ------', 'Trust the Netherlands')
-    for user in epoch_status_users:
-        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
-                    + str(user) + '&parse_mode=HTML&text=' + msg + f'<pre>{table}</pre>'
+    if not fail:
+        retry = 0
+        table = str(table)\
+            .replace(' | --M-- | --', 'Trust Staking')\
+            .replace('--- | Swiss | -----', 'Trust Staking Swiss')\
+            .replace('- | -USA- | ----', 'Trust Staking US')\
+            .replace('----- | -PRT- | -------', 'Trust Staking Portugal ') \
+            .replace('---- | -NLD- | ------', 'Trust the Netherlands')
+        for user in epoch_status_users:
+            send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' \
+                        + str(user) + '&parse_mode=HTML&text=' + msg + f'<pre>{table}</pre>'
 
-        response = requests.get(send_text)
-        data = response.json()
-    with open('trust_agencies.json', 'w') as fp:
-        json.dump(trust_agencies, fp)
+            response = requests.get(send_text)
+            data = response.json()
+        with open('trust_agencies.json', 'w') as fp:
+            json.dump(trust_agencies, fp)
 
 
 def update_eligible():
@@ -418,6 +440,7 @@ def update_eligible():
 
 
 def main():
+    global updater
     updater = Updater(bot_token)
     dp = updater.dispatcher
     global bot
